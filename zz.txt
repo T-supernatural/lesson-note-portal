@@ -1,0 +1,12 @@
+wow, it works absolutely well, and easy to understand, 
+so i just want a little changes, first when teachers 
+draft a new note and not submit yet, it should not be 
+shown on the admin dashboard, second,  the note should 
+be openable, meaning it can be viewed and downloaded as
+a pdf or word document, third there should be a back 
+to dashboard navigation, aside these changes, it works
+absolutely perfect, so help me write a good prompt 
+instructing the claude code agentic ai to add or fix 
+those suggestions, also the request changes should be 
+visible in the teachers dashboard regarding the particular
+note the admin requested changes on.
