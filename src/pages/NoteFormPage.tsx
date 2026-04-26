@@ -37,7 +37,7 @@ const NoteFormPage = () => {
       return;
     }
     setLoading(true);
-    fetchNoteById(id)
+    fetchNoteById(id, profile.id)
       .then((note) => {
         if (note) {
           reset({

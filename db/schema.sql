@@ -72,9 +72,17 @@ create policy lesson_notes_insert_teacher on lesson_notes
 
 create policy lesson_notes_update_teacher on lesson_notes
   for update
-  using (teacher_id = auth.uid())
-  with check (teacher_id = auth.uid() and status in ('draft', 'rejected'));
+  using (teacher_id = auth.uid() AND status in ('draft', 'rejected'))
+  with check (teacher_id = auth.uid() AND status in ('draft', 'rejected', 'submitted'));
 
 create policy lesson_notes_update_admin on lesson_notes
   for update
+  using (is_admin(auth.uid()));
+
+create policy lesson_notes_delete_teacher on lesson_notes
+  for delete
+  using (teacher_id = auth.uid());
+
+create policy lesson_notes_delete_admin on lesson_notes
+  for delete
   using (is_admin(auth.uid()));

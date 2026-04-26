@@ -11,12 +11,10 @@ export const fetchTeacherNotes = async (teacherId: string) => {
   return (data as LessonNote[]) ?? [];
 };
 
-export const fetchNoteById = async (noteId: string) => {
-  const { data, error } = await supabase
-    .from('lesson_notes')
-    .select('*')
-    .eq('id', noteId)
-    .single();
+export const fetchNoteById = async (noteId: string, teacherId?: string) => {
+  let query = supabase.from('lesson_notes').select('*').eq('id', noteId);
+  if (teacherId) query = query.eq('teacher_id', teacherId);
+  const { data, error } = await query.single();
   if (error) throw error;
   return data as LessonNote;
 };
@@ -31,6 +29,17 @@ export const updateLessonNote = async (noteId: string, payload: Partial<LessonNo
   const { data, error } = await supabase
     .from('lesson_notes')
     .update({ ...payload, updated_at: new Date().toISOString() })
+    .eq('id', noteId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as LessonNote;
+};
+
+export const deleteLessonNote = async (noteId: string) => {
+  const { data, error } = await supabase
+    .from('lesson_notes')
+    .delete()
     .eq('id', noteId)
     .select()
     .single();

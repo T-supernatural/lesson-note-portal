@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { fetchTeacherNotes } from '../services/notes';
+import { deleteLessonNote, fetchTeacherNotes } from '../services/notes';
 import Button from '../components/Button';
 import NoteCard from '../components/NoteCard';
 import EmptyState from '../components/EmptyState';
@@ -11,6 +12,7 @@ const NotesPage = () => {
   const { profile } = useAuth();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +23,22 @@ const NotesPage = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [profile]);
+
+  const handleDelete = async (noteId: string) => {
+    const confirmed = window.confirm('Delete this draft note? This cannot be undone.');
+    if (!confirmed) return;
+
+    setDeletingId(noteId);
+    try {
+      await deleteLessonNote(noteId);
+      setNotes((current) => current.filter((note) => note.id !== noteId));
+      toast.success('Draft deleted');
+    } catch (error: any) {
+      toast.error(error?.message || 'Unable to delete draft');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -48,7 +66,14 @@ const NotesPage = () => {
           ) : notes.length === 0 ? (
             <EmptyState title="No notes found" subtitle="Create a lesson note to begin. Saved drafts appear here." />
           ) : (
-            notes.map((note) => <NoteCard key={note.id} note={note} />)
+            notes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onDelete={handleDelete}
+                isDeleting={deletingId === note.id}
+              />
+            ))
           )}
         </div>
       </div>

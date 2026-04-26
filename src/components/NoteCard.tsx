@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Edit3, Eye } from 'lucide-react';
+import { Bookmark, Edit3, Eye, Trash2 } from 'lucide-react';
 import type { LessonNote } from '../types';
 import StatusBadge from './StatusBadge';
 
-const NoteCard = ({ note }: { note: LessonNote }) => {
+const NoteCard = ({ note, onDelete, isDeleting }: { note: LessonNote; onDelete?: (id: string) => void; isDeleting?: boolean }) => {
   return (
     <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -24,7 +24,7 @@ const NoteCard = ({ note }: { note: LessonNote }) => {
         </div>
         <div className="flex flex-col gap-3 items-start sm:items-end">
           <StatusBadge status={note.status} />
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link
               to={`/notes/${note.id}`}
               className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
@@ -39,6 +39,17 @@ const NoteCard = ({ note }: { note: LessonNote }) => {
               <Edit3 className="h-4 w-4" />
               Edit
             </Link>
+            {note.status === 'draft' && onDelete ? (
+              <button
+                type="button"
+                onClick={() => onDelete(note.id)}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
