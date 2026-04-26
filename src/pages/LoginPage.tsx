@@ -53,6 +53,11 @@ const LoginPage = () => {
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? 'Signing in…' : 'Login'}
           </Button>
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm font-semibold text-slate-900 hover:text-slate-700">
+              Forgot password?
+            </Link>
+          </div>
         </form>
       </div>
     </div>
