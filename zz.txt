@@ -1,12 +1,41 @@
-wow, it works absolutely well, and easy to understand, 
-so i just want a little changes, first when teachers 
-draft a new note and not submit yet, it should not be 
-shown on the admin dashboard, second,  the note should 
-be openable, meaning it can be viewed and downloaded as
-a pdf or word document, third there should be a back 
-to dashboard navigation, aside these changes, it works
-absolutely perfect, so help me write a good prompt 
-instructing the claude code agentic ai to add or fix 
-those suggestions, also the request changes should be 
-visible in the teachers dashboard regarding the particular
-note the admin requested changes on.
+insert into profiles (id, full_name, email, role, subject)
+values (
+  'a434d3f6-bc1e-41df-810f-5f3d8c553870',
+  'Jane Doe',
+  'jane.doe@example.com',
+  'teacher',
+  'Mathematics'
+);
+
+insert into profiles (id, full_name, email, role, subject)
+values
+  ('a434d3f6-bc1e-41df-810f-5f3d8c553870', 'Jane Doe', 'jane.doe@example.com', 'teacher', 'Mathematics'),
+  ('b12f9c68-5aad-4f72-9b1a-7394d2f2ab67', 'John Smith', 'john.smith@example.com', 'teacher', 'English'),
+  ('c83d7b24-4e50-4eb1-8a18-12f7a2d3d890', 'Mary Admin', 'mary.admin@example.com', 'admin', NULL);
+
+
+  update profiles
+set full_name = 'Jane Doe', email = 'jane.doe@example.com', role = 'teacher', subject = 'Mathematics'
+where id = 'a434d3f6-bc1e-41df-810f-5f3d8c553870';
+
+update profiles
+set full_name = 'John Smith', email = 'john.smith@example.com', role = 'teacher', subject = 'English'
+where id = 'b12f9c68-5aad-4f72-9b1a-7394d2f2ab67';
+
+update profiles
+set full_name = 'Mary Admin', email = 'mary.admin@example.com', role = 'admin', subject = null
+where id = 'c83d7b24-4e50-4eb1-8a18-12f7a2d3d890';
+
+
+final/////
+
+insert into profiles (id, full_name, email, role, subject)
+values
+  ('cae4f4f5-d60f-47cc-a5d7-248b12b6b31b', 'Tinuade Michael', 'tinuademichael@gmail.com', 'teacher', 'ICT'),
+  ('d51e23ba-36c4-47f2-8724-ddd14bc93031', 'The Admin', 'realjoyschools.edu@gmail.com', 'admin', NULL)
+on conflict (id) do update
+set
+  full_name = excluded.full_name,
+  email = excluded.email,
+  role = excluded.role,
+  subject = excluded.subject;
