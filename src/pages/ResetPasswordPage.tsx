@@ -26,7 +26,7 @@ const ResetPasswordPage = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        await supabase.auth.getSessionFromUrl({ storeSession: true });
+        await supabase.auth.getSession();
       } catch (error) {
         console.warn('Password reset init error', error);
       }
