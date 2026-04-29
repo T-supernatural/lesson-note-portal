@@ -11,9 +11,9 @@ import Textarea from '../components/Textarea';
 import Select from '../components/Select';
 import PageHeader from '../components/PageHeader';
 
-const classLevels = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
+const classLevels = ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
 const terms = ['Term 1', 'Term 2', 'Term 3'];
-const weeks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+const weeks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
 
 const NoteFormPage = () => {
   const { id } = useParams();
