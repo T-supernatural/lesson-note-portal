@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,17 @@ import PageHeader from '../components/PageHeader';
 const classLevels = ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
 const terms = ['Term 1', 'Term 2', 'Term 3'];
 const weeks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+
+const isBlankRichText = (content?: string) => {
+  if (!content) return true;
+  const withoutTags = content
+    .replace(/<br\s*\/?>/gi, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .trim();
+  const hasMediaOrTable = /<(img|table)\b/i.test(content);
+  return !withoutTags && !hasMediaOrTable;
+};
 
 const NoteFormPage = () => {
   const { id } = useParams();
@@ -103,8 +114,7 @@ const NoteFormPage = () => {
       return;
     }
 
-    // Validate main_content from watch
-    if (!mainContent || mainContent.trim() === '' || mainContent === '<p><br></p>') {
+    if (isBlankRichText(mainContent)) {
       toast.error('Main content is required');
       return;
     }
@@ -262,7 +272,12 @@ const NoteFormPage = () => {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">Teacher's presentation</label>
-              <Textarea {...register('teachers_presentation')} placeholder="Optional: Describe how you will present this lesson to the class" disabled={noteLocked} />
+              <Textarea
+                {...register('teachers_presentation', { required: "Teacher's presentation is required" })}
+                placeholder="Describe how you will present this lesson to the class"
+                disabled={noteLocked}
+              />
+              {errors.teachers_presentation && <p className="mt-1 text-sm text-rose-600">{errors.teachers_presentation.message}</p>}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

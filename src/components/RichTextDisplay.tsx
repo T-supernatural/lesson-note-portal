@@ -18,7 +18,7 @@ const RichTextDisplay = ({ content }: RichTextDisplayProps) => {
       ALLOWED_TAGS: [
         'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
-        'blockquote', 'pre', 'code', 'a', 'img', 'span', 'div',
+        'blockquote', 'pre', 'code', 'a', 'img', 'span', 'div', 'sub', 'sup',
       ],
       ALLOWED_ATTR: [
         'href', 'title', 'target', 'rel',
@@ -74,13 +74,18 @@ const RichTextDisplay = ({ content }: RichTextDisplayProps) => {
             width: 100%;
             border-collapse: collapse;
             margin: 1em 0;
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #64748b;
+            table-layout: fixed;
+            page-break-inside: avoid;
           }
           .ql-editor table td,
           .ql-editor table th {
-            border: 1px solid #e2e8f0;
+            border: 1.5px solid #64748b;
             padding: 0.5em;
             text-align: left;
+            min-width: 4rem;
+            vertical-align: top;
+            word-break: break-word;
           }
           .ql-editor table th {
             background-color: #f8fafc;
@@ -126,6 +131,11 @@ const RichTextDisplay = ({ content }: RichTextDisplayProps) => {
             background-color: transparent;
             border: none;
             padding: 0;
+          }
+          .ql-editor sub,
+          .ql-editor sup {
+            font-size: 0.75em;
+            line-height: 0;
           }
         `}</style>
       </>

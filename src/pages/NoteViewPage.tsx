@@ -100,6 +100,13 @@ const NoteViewPage = () => {
             </section>
 
             <section>
+              <h2 className="text-sm font-semibold text-slate-900">Teacher's Presentation</h2>
+              <div className="mt-2">
+                <RichTextDisplay content={note.teachers_presentation} />
+              </div>
+            </section>
+
+            <section>
               <h2 className="text-sm font-semibold text-slate-900">Main Lesson Content</h2>
               <div className="mt-2">
                 <RichTextDisplay content={note.main_content} />

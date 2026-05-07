@@ -101,6 +101,12 @@ const AdminReviewPage = () => {
                   <p className="mt-2 text-sm text-slate-600 whitespace-pre-line">{note.introduction}</p>
                 </section>
                 <section>
+                  <h2 className="text-sm font-semibold text-slate-900">Teacher's presentation</h2>
+                  <div className="mt-2">
+                    <RichTextDisplay content={note.teachers_presentation} />
+                  </div>
+                </section>
+                <section>
                   <h2 className="text-sm font-semibold text-slate-900">Main content</h2>
                   <div className="mt-2">
                     <RichTextDisplay content={note.main_content} />
