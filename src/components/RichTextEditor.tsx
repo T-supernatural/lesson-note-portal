@@ -7,6 +7,16 @@ import clsx from 'clsx';
 
 const BlockEmbed = Quill.import('blots/block/embed');
 
+const fillCellWithTextarea = (cell: Element, value = '') => {
+  const textarea = document.createElement('textarea');
+  textarea.className = 'lesson-table-cell-input';
+  textarea.value = value || cell.textContent?.trim() || '';
+  textarea.setAttribute('aria-label', 'Table cell');
+  cell.setAttribute('contenteditable', 'false');
+  cell.innerHTML = '';
+  cell.appendChild(textarea);
+};
+
 class LessonTableBlot extends BlockEmbed {
   static blotName = 'lessonTable';
   static tagName = 'div';
@@ -17,7 +27,7 @@ class LessonTableBlot extends BlockEmbed {
     node.setAttribute('contenteditable', 'false');
     node.innerHTML = value;
     node.querySelectorAll('td, th').forEach((cell) => {
-      cell.setAttribute('contenteditable', 'true');
+      fillCellWithTextarea(cell);
     });
     return node;
   }
@@ -50,11 +60,16 @@ const RichTextEditor = ({
   const [isUploading, setIsUploading] = useState(false);
   const toolbarId = useMemo(() => `rich-text-toolbar-${Math.random().toString(36).slice(2)}`, []);
   const editorValue = useMemo(() => {
-    if (!value || !/<table\b/i.test(value) || /lesson-table-embed/.test(value) || typeof DOMParser === 'undefined') {
+    if (!value || !/<table\b/i.test(value) || typeof DOMParser === 'undefined') {
       return value;
     }
 
     const documentFragment = new DOMParser().parseFromString(`<div>${value}</div>`, 'text/html');
+    documentFragment.body.querySelectorAll('.lesson-table-cell-input').forEach((input) => {
+      const textarea = input as HTMLTextAreaElement;
+      const cell = textarea.closest('td, th');
+      if (cell) cell.textContent = textarea.value || textarea.textContent || textarea.getAttribute('value') || '';
+    });
     documentFragment.body.querySelectorAll('table').forEach((table) => {
       if (table.parentElement?.classList.contains('lesson-table-embed')) return;
       const wrapper = documentFragment.createElement('div');
@@ -66,6 +81,17 @@ const RichTextEditor = ({
 
     return documentFragment.body.firstElementChild?.innerHTML ?? value;
   }, [value]);
+
+  const serializeEditorHTML = (root: HTMLElement) => {
+    const clone = root.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.lesson-table-cell-input').forEach((input) => {
+      const textarea = input as HTMLTextAreaElement;
+      const cell = textarea.closest('td, th');
+      if (!cell) return;
+      cell.textContent = textarea.value;
+    });
+    return clone.innerHTML;
+  };
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -81,11 +107,42 @@ const RichTextEditor = ({
   const syncCurrentEditorHTML = () => {
     if (!quillRef.current) return;
     const root = quillRef.current.getEditor().root;
-    lastSyncedHTMLRef.current = root.innerHTML;
-    onChangeRef.current(root.innerHTML);
+    const cleanHTML = serializeEditorHTML(root);
+    lastSyncedHTMLRef.current = cleanHTML;
+    onChangeRef.current(cleanHTML);
+  };
+
+  const handleEditorChange = (content: string) => {
+    if (!quillRef.current) {
+      onChange(content);
+      return;
+    }
+
+    const root = quillRef.current.getEditor().root;
+    const hasTableInputs = Boolean(root.querySelector('.lesson-table-cell-input'));
+    if (!hasTableInputs) {
+      onChange(content);
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement.classList.contains('lesson-table-cell-input')) {
+      lastSyncedHTMLRef.current = serializeEditorHTML(root);
+      return;
+    }
+
+    const cleanHTML = serializeEditorHTML(root);
+    lastSyncedHTMLRef.current = cleanHTML;
+    onChange(cleanHTML);
   };
 
   const getActiveCell = () => {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement.classList.contains('lesson-table-cell-input')) {
+      const cell = activeElement.closest('td, th') as HTMLTableCellElement | null;
+      return quillRef.current?.getEditor().root.contains(cell) ? cell : null;
+    }
+
     const selection = document.getSelection();
     const node = selection?.anchorNode;
     const element = node instanceof Element ? node : node?.parentElement;
@@ -102,7 +159,7 @@ const RichTextEditor = ({
       const row = document.createElement('tr');
       Array.from({ length: columns }).forEach(() => {
         const cell = document.createElement('td');
-        cell.innerHTML = '<br>';
+        fillCellWithTextarea(cell);
         row.appendChild(cell);
       });
       tbody.appendChild(row);
@@ -113,12 +170,12 @@ const RichTextEditor = ({
   };
 
   const placeCursorInCell = (cell: HTMLTableCellElement) => {
-    const range = document.createRange();
-    range.selectNodeContents(cell);
-    range.collapse(true);
-    const selection = document.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+    const input = cell.querySelector('.lesson-table-cell-input') as HTMLTextAreaElement | null;
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      return;
+    }
   };
 
   const insertTable = () => {
@@ -153,12 +210,12 @@ const RichTextEditor = ({
     const newRow = document.createElement('tr');
     Array.from({ length: columnCount }).forEach(() => {
       const newCell = document.createElement('td');
-      newCell.innerHTML = '<br>';
+      fillCellWithTextarea(newCell);
       newRow.appendChild(newCell);
     });
     row.after(newRow);
-    placeCursorInCell(newRow.cells[0]);
     syncCurrentEditorHTML();
+    window.setTimeout(() => placeCursorInCell(newRow.cells[0]), 0);
   };
 
   const removeTableRow = () => {
@@ -196,12 +253,12 @@ const RichTextEditor = ({
     const index = Array.from(row.children).indexOf(cell);
     table.querySelectorAll('tr').forEach((tableRow) => {
       const newCell = document.createElement('td');
-      newCell.innerHTML = '<br>';
+      fillCellWithTextarea(newCell);
       tableRow.children[index]?.after(newCell);
     });
     const insertedCell = row.children[index + 1] as HTMLTableCellElement | undefined;
-    if (insertedCell) placeCursorInCell(insertedCell);
     syncCurrentEditorHTML();
+    if (insertedCell) window.setTimeout(() => placeCursorInCell(insertedCell), 0);
   };
 
   const removeTableColumn = () => {
@@ -322,9 +379,27 @@ const RichTextEditor = ({
       });
     }
 
-    root.addEventListener('input', syncCurrentEditorHTML);
+    const handleEditorInput = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('td, th')) {
+        lastSyncedHTMLRef.current = serializeEditorHTML(root);
+        return;
+      }
+      syncCurrentEditorHTML();
+    };
+
+    const handleEditorFocusOut = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('td, th')) {
+        syncCurrentEditorHTML();
+      }
+    };
+
+    root.addEventListener('input', handleEditorInput);
+    root.addEventListener('focusout', handleEditorFocusOut);
     return () => {
-      root.removeEventListener('input', syncCurrentEditorHTML);
+      root.removeEventListener('input', handleEditorInput);
+      root.removeEventListener('focusout', handleEditorFocusOut);
     };
   }, []);
 
@@ -409,7 +484,7 @@ const RichTextEditor = ({
       <ReactQuill
         ref={quillRef}
         value={editorValue}
-        onChange={onChange}
+        onChange={handleEditorChange}
         modules={modules}
         formats={formats}
         placeholder={placeholder}
@@ -480,10 +555,27 @@ const RichTextEditor = ({
         .rich-text-editor table td,
         .rich-text-editor table th {
           border: 1.5px solid #64748b;
-          padding: 8px;
+          padding: 0;
           text-align: left;
           min-width: 72px;
           vertical-align: top;
+        }
+        .rich-text-editor .lesson-table-cell-input {
+          display: block;
+          width: 100%;
+          min-height: 42px;
+          resize: vertical;
+          border: 0;
+          background: transparent;
+          padding: 8px;
+          color: #1e293b;
+          font: inherit;
+          line-height: 1.5;
+          outline: none;
+        }
+        .rich-text-editor .lesson-table-cell-input:focus {
+          background: #f8fafc;
+          box-shadow: inset 0 0 0 2px #0284c7;
         }
         .rich-text-editor table {
           width: 100%;
