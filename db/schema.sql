@@ -32,6 +32,7 @@ create table if not exists lesson_notes (
   introduction text not null,
   main_content text not null,
   evaluation text not null,
+  teachers_presentation text,
   assignment text not null,
   status text not null default 'draft' check (status in ('draft', 'submitted', 'approved', 'rejected')),
   admin_comment text,

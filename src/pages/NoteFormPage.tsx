@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Textarea from '../components/Textarea';
 import Select from '../components/Select';
+import RichTextEditor from '../components/RichTextEditor';
 import PageHeader from '../components/PageHeader';
 
 const classLevels = ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
@@ -27,8 +28,12 @@ const NoteFormPage = () => {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<Record<string, string>>({ mode: 'onTouched' });
+
+  const mainContent = watch('main_content');
 
   useEffect(() => {
     if (!profile) return;
@@ -51,6 +56,7 @@ const NoteFormPage = () => {
             introduction: note.introduction,
             main_content: note.main_content,
             evaluation: note.evaluation,
+            teachers_presentation: note.teachers_presentation || '',
             assignment: note.assignment,
           });
           setExistingNote(note);
@@ -82,6 +88,7 @@ const NoteFormPage = () => {
         introduction: last.introduction,
         main_content: last.main_content,
         evaluation: last.evaluation,
+        teachers_presentation: last.teachers_presentation || '',
         assignment: last.assignment,
       });
     } finally {
@@ -96,6 +103,12 @@ const NoteFormPage = () => {
       return;
     }
 
+    // Validate main_content from watch
+    if (!mainContent || mainContent.trim() === '' || mainContent === '<p><br></p>') {
+      toast.error('Main content is required');
+      return;
+    }
+
     const payload = {
       teacher_id: profile.id,
       subject: data.subject,
@@ -106,8 +119,9 @@ const NoteFormPage = () => {
       objectives: data.objectives,
       materials: data.materials,
       introduction: data.introduction,
-      main_content: data.main_content,
+      main_content: mainContent,
       evaluation: data.evaluation,
+      teachers_presentation: data.teachers_presentation,
       assignment: data.assignment,
       status,
       admin_comment: existingNote?.admin_comment ?? null,
@@ -223,7 +237,12 @@ const NoteFormPage = () => {
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Main lesson content</label>
-                <Textarea {...register('main_content', { required: 'Main content is required' })} placeholder="Describe the teaching steps and activities" disabled={noteLocked} />
+                <RichTextEditor
+                  value={mainContent || ''}
+                  onChange={(value) => setValue('main_content', value)}
+                  placeholder="Describe the teaching steps and activities. Format with bold, lists, tables, images, and more..."
+                  disabled={noteLocked}
+                />
                 {errors.main_content && <p className="mt-1 text-sm text-rose-600">{errors.main_content.message}</p>}
               </div>
             </div>
@@ -239,6 +258,11 @@ const NoteFormPage = () => {
                 <Textarea {...register('assignment', { required: 'Assignment is required' })} placeholder="What tasks will learners complete?" disabled={noteLocked} />
                 {errors.assignment && <p className="mt-1 text-sm text-rose-600">{errors.assignment.message}</p>}
               </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Teacher's presentation</label>
+              <Textarea {...register('teachers_presentation')} placeholder="Optional: Describe how you will present this lesson to the class" disabled={noteLocked} />
             </div>
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

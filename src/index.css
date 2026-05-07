@@ -25,3 +25,65 @@ textarea {
 ::selection {
   @apply bg-sky-200 text-slate-900;
 }
+
+/* Print styles for PDF export */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .ql-editor {
+    background: white;
+  }
+  
+  .ql-editor h1 {
+    page-break-after: avoid;
+    margin-top: 1.5em;
+  }
+  
+  .ql-editor h2,
+  .ql-editor h3 {
+    page-break-after: avoid;
+  }
+  
+  .ql-editor table {
+    page-break-inside: avoid;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .ql-editor table td,
+  .ql-editor table th {
+    border: 1px solid #000;
+    padding: 8px;
+  }
+  
+  .ql-editor img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
+  
+  .ql-editor pre {
+    page-break-inside: avoid;
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+  }
+  
+  .ql-editor ul,
+  .ql-editor ol {
+    page-break-inside: avoid;
+  }
+  
+  .ql-editor li {
+    page-break-inside: avoid;
+  }
+  
+  /* Hide UI elements that shouldn't print */
+  .ql-toolbar,
+  button,
+  [role="navigation"] {
+    display: none !important;
+  }
+}
+

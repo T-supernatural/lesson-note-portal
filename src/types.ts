@@ -24,6 +24,7 @@ export type LessonNote = {
   introduction: string;
   main_content: string;
   evaluation: string;
+  teachers_presentation: string | null;
   assignment: string;
   status: LessonStatus;
   admin_comment: string | null;

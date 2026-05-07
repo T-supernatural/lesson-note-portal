@@ -6,6 +6,7 @@ import { fetchNoteById } from '../services/notes';
 import Button from '../components/Button';
 import StatusBadge from '../components/StatusBadge';
 import PageHeader from '../components/PageHeader';
+import RichTextDisplay from '../components/RichTextDisplay';
 import toast from 'react-hot-toast';
 
 const NoteViewPage = () => {
@@ -100,7 +101,9 @@ const NoteViewPage = () => {
 
             <section>
               <h2 className="text-sm font-semibold text-slate-900">Main Lesson Content</h2>
-              <p className="mt-2 text-sm text-slate-600 whitespace-pre-line">{note.main_content}</p>
+              <div className="mt-2">
+                <RichTextDisplay content={note.main_content} />
+              </div>
             </section>
 
             <section>

@@ -8,6 +8,7 @@ import { fetchNoteById, updateLessonNote } from '../services/notes';
 import Button from '../components/Button';
 import StatusBadge from '../components/StatusBadge';
 import PageHeader from '../components/PageHeader';
+import RichTextDisplay from '../components/RichTextDisplay';
 import { formatDate } from '../utils/format';
 
 const AdminReviewPage = () => {
@@ -101,7 +102,9 @@ const AdminReviewPage = () => {
                 </section>
                 <section>
                   <h2 className="text-sm font-semibold text-slate-900">Main content</h2>
-                  <p className="mt-2 text-sm text-slate-600 whitespace-pre-line">{note.main_content}</p>
+                  <div className="mt-2">
+                    <RichTextDisplay content={note.main_content} />
+                  </div>
                 </section>
                 <section>
                   <h2 className="text-sm font-semibold text-slate-900">Evaluation</h2>
