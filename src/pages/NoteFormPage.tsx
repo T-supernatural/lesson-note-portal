@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,28 @@ import PageHeader from '../components/PageHeader';
 const classLevels = ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
 const terms = ['Term 1', 'Term 2', 'Term 3'];
 const weeks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+const AUTO_SAVE_DELAY_MS = 1800;
+
+type LocalDraft = {
+  savedAt: string;
+  noteId: string;
+  values: Record<string, string>;
+};
+
+const formFields = [
+  'subject',
+  'class_level',
+  'term',
+  'week',
+  'topic',
+  'objectives',
+  'materials',
+  'introduction',
+  'main_content',
+  'evaluation',
+  'teachers_presentation',
+  'assignment',
+];
 
 const isBlankRichText = (content?: string) => {
   if (!content) return true;
@@ -27,6 +49,25 @@ const isBlankRichText = (content?: string) => {
   return !withoutTags && !hasMediaOrTable;
 };
 
+const hasDraftContent = (values: Record<string, string>) => {
+  return formFields.some((field) => {
+    const value = values[field];
+    if (field === 'main_content') return !isBlankRichText(value);
+    return Boolean(value?.trim());
+  });
+};
+
+const formatRecoveryTime = (savedAt: string) => {
+  const date = new Date(savedAt);
+  if (Number.isNaN(date.getTime())) return 'a previous session';
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const NoteFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,20 +76,75 @@ const NoteFormPage = () => {
   const [noteLocked, setNoteLocked] = useState(false);
   const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [existingNote, setExistingNote] = useState<any>(null);
+  const [localDraft, setLocalDraft] = useState<LocalDraft | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastLocalSave, setLastLocalSave] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine));
+  const hydratedRef = useRef(false);
   const {
     register,
     handleSubmit,
     reset,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<Record<string, string>>({ mode: 'onTouched' });
 
   const mainContent = watch('main_content');
+  const watchedValues = useWatch({ control });
+  const draftKey = useMemo(() => {
+    if (!profile) return null;
+    return `lesson-note-autosave:${profile.id}:${id ?? 'new'}`;
+  }, [id, profile]);
+
+  const readLocalDraft = () => {
+    if (!draftKey) return null;
+    try {
+      const rawDraft = localStorage.getItem(draftKey);
+      if (!rawDraft) return null;
+      const parsed = JSON.parse(rawDraft) as LocalDraft;
+      if (!parsed?.values || !hasDraftContent(parsed.values)) {
+        localStorage.removeItem(draftKey);
+        return null;
+      }
+      return parsed;
+    } catch {
+      localStorage.removeItem(draftKey);
+      return null;
+    }
+  };
+
+  const clearLocalDraft = () => {
+    if (!draftKey) return;
+    localStorage.removeItem(draftKey);
+    setLocalDraft(null);
+    setLastLocalSave(null);
+    setAutoSaveStatus('idle');
+  };
+
+  const restoreLocalDraft = () => {
+    if (!localDraft) return;
+    reset(localDraft.values);
+    setLocalDraft(null);
+    setLastLocalSave(localDraft.savedAt);
+    setAutoSaveStatus('saved');
+    hydratedRef.current = true;
+    toast.success('Local draft restored');
+  };
+
+  const discardLocalDraft = () => {
+    clearLocalDraft();
+    hydratedRef.current = true;
+    toast.success('Local draft discarded');
+  };
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || !draftKey) return;
     if (!id) {
+      const draft = readLocalDraft();
+      if (draft) setLocalDraft(draft);
+      hydratedRef.current = true;
       setLoading(false);
       return;
     }
@@ -71,12 +167,93 @@ const NoteFormPage = () => {
             assignment: note.assignment,
           });
           setExistingNote(note);
-          setNoteLocked(note.status === 'submitted' || note.status === 'approved');
+          const locked = note.status === 'submitted' || note.status === 'approved';
+          setNoteLocked(locked);
+          const draft = locked ? null : readLocalDraft();
+          if (draft) setLocalDraft(draft);
+          hydratedRef.current = true;
         }
       })
-      .catch(() => toast.error('Unable to load note'))
+      .catch(() => {
+        const draft = readLocalDraft();
+        if (draft) {
+          setLocalDraft(draft);
+          hydratedRef.current = true;
+          toast.error('Unable to load from server. Your local draft is still available.');
+        } else {
+          toast.error('Unable to load note');
+          navigate('/notes');
+        }
+      })
       .finally(() => setLoading(false));
-  }, [id, profile, reset]);
+  }, [draftKey, id, navigate, profile, reset]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftKey || loading || noteLocked || localDraft || !hydratedRef.current) return;
+
+    const valuesToSave = formFields.reduce<Record<string, string>>((acc, field) => {
+      acc[field] = watchedValues[field] ?? '';
+      return acc;
+    }, {});
+
+    if (!hasDraftContent(valuesToSave)) return;
+
+    setAutoSaveStatus('saving');
+    const timeoutId = window.setTimeout(() => {
+      try {
+        const savedAt = new Date().toISOString();
+        const draft: LocalDraft = {
+          savedAt,
+          noteId: id ?? 'new',
+          values: valuesToSave,
+        };
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        setLastLocalSave(savedAt);
+        setAutoSaveStatus('saved');
+      } catch {
+        setAutoSaveStatus('error');
+      }
+    }, AUTO_SAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [draftKey, existingNote, id, loading, localDraft, noteLocked, watchedValues]);
+
+  useEffect(() => {
+    const saveBeforeUnload = () => {
+      if (!draftKey || noteLocked || localDraft || !hydratedRef.current) return;
+      const valuesToSave = formFields.reduce<Record<string, string>>((acc, field) => {
+        acc[field] = watchedValues[field] ?? '';
+        return acc;
+      }, {});
+      if (!hasDraftContent(valuesToSave)) return;
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            savedAt: new Date().toISOString(),
+            noteId: id ?? 'new',
+            values: valuesToSave,
+          }),
+        );
+      } catch {
+        // Best-effort protection during tab close.
+      }
+    };
+
+    window.addEventListener('beforeunload', saveBeforeUnload);
+    return () => window.removeEventListener('beforeunload', saveBeforeUnload);
+  }, [draftKey, id, localDraft, noteLocked, watchedValues]);
 
   const latestNote = async () => {
     if (!profile) return;
@@ -102,6 +279,7 @@ const NoteFormPage = () => {
         teachers_presentation: last.teachers_presentation || '',
         assignment: last.assignment,
       });
+      toast.success('Previous note copied. Changes are protected locally.');
     } finally {
       setDuplicateLoading(false);
     }
@@ -146,9 +324,10 @@ const NoteFormPage = () => {
         await createLessonNote(payload as any);
         toast.success(status === 'submitted' ? 'Lesson submitted' : 'Draft saved');
       }
+      clearLocalDraft();
       navigate('/notes');
     } catch (error: any) {
-      toast.error(error?.message || 'Unable to save note');
+      toast.error(error?.message || 'Unable to save note. Your work is still protected locally.');
     }
   };
 
@@ -176,6 +355,35 @@ const NoteFormPage = () => {
           {noteLocked ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
               This lesson note has already been submitted or approved. You cannot edit it further unless it is rejected.
+            </div>
+          ) : null}
+          {localDraft ? (
+            <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-950">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold">You have an unsaved local draft from {formatRecoveryTime(localDraft.savedAt)}.</p>
+                  <p className="mt-1 text-sky-800">Restore it to continue where you stopped, or discard it and keep the current form.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button type="button" onClick={restoreLocalDraft}>Restore Draft</Button>
+                  <Button type="button" variant="outline" onClick={discardLocalDraft}>Discard Draft</Button>
+                </div>
+              </div>
+            </div>
+          ) : !noteLocked ? (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium text-slate-600">
+              <span className={isOnline ? 'text-emerald-700' : 'text-amber-700'}>
+                {isOnline ? 'Online' : 'Offline mode'}
+              </span>
+              <span>
+                {autoSaveStatus === 'saving'
+                  ? 'Saving locally...'
+                  : autoSaveStatus === 'saved' && lastLocalSave
+                    ? `Changes protected locally at ${formatRecoveryTime(lastLocalSave)}`
+                    : autoSaveStatus === 'error'
+                      ? 'Local auto-save is unavailable'
+                      : 'Changes will be protected locally as you type'}
+              </span>
             </div>
           ) : null}
 
