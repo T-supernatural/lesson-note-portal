@@ -113,6 +113,41 @@ const parseJson = (raw: string) => {
   }
 };
 
+export const stripHtmlTags = (value: string | null | undefined): string => {
+  if (!value) return '';
+
+  let text = String(value)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(ul|ol)>/gi, '\n')
+    .replace(/<\/?li>/gi, '\n• ')
+    .replace(/<\/?p>/gi, '\n')
+    .replace(/<\/?div>/gi, '\n')
+    .replace(/<\/?h[1-6]>/gi, '\n')
+    .replace(/<\/?(strong|b)>/gi, '')
+    .replace(/<\/?(em|i)>/gi, '')
+    .replace(/<\/?span>/gi, '');
+
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  const plainText = doc.body.textContent ?? '';
+
+  return plainText
+    .replace(/\u00a0/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim();
+};
+
+const sanitizeGeneratedLessonNote = (note: AiGeneratedLessonNote): AiGeneratedLessonNote => ({
+  objectives: stripHtmlTags(note.objectives),
+  materials: stripHtmlTags(note.materials),
+  introduction: stripHtmlTags(note.introduction),
+  teachers_presentation: stripHtmlTags(note.teachers_presentation),
+  main_content: note.main_content.trim(),
+  evaluation: stripHtmlTags(note.evaluation),
+  assignment: stripHtmlTags(note.assignment),
+});
+
 const isRetryableGeminiError = (error: unknown) => {
   if (!error || typeof error !== 'object') return false;
   const maybeStatus = (error as any).status;
@@ -226,15 +261,15 @@ const generateWithModel = async (
     throw new Error('AI response did not include all the required lesson note fields.');
   }
 
-  return {
-    objectives: parsed.objectives.trim(),
-    materials: parsed.materials.trim(),
-    introduction: parsed.introduction.trim(),
-    teachers_presentation: parsed.teachers_presentation.trim(),
-    main_content: parsed.main_content.trim(),
-    evaluation: parsed.evaluation.trim(),
-    assignment: parsed.assignment.trim(),
-  };
+  return sanitizeGeneratedLessonNote({
+    objectives: parsed.objectives,
+    materials: parsed.materials,
+    introduction: parsed.introduction,
+    teachers_presentation: parsed.teachers_presentation,
+    main_content: parsed.main_content,
+    evaluation: parsed.evaluation,
+    assignment: parsed.assignment,
+  });
 };
 
 // Retry wrapper for a single model with exponential backoff

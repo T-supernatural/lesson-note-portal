@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createLessonNote, fetchNoteById, fetchTeacherNotes, updateLessonNote } from '../services/notes';
-import { generateLessonNote, type AiGeneratedLessonNote, type AiLessonGenerationRequest } from '../lib/gemini';
+import { generateLessonNote, stripHtmlTags, type AiGeneratedLessonNote, type AiLessonGenerationRequest } from '../lib/gemini';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Textarea from '../components/Textarea';
@@ -189,13 +189,13 @@ const NoteFormPage = () => {
     setValue('class_level', aiForm.classLevel);
     setValue('topic', aiForm.topic);
     setValue('week', aiForm.week);
-    setValue('objectives', aiGeneratedDraft.objectives);
-    setValue('materials', aiGeneratedDraft.materials);
-    setValue('introduction', aiGeneratedDraft.introduction);
-    setValue('teachers_presentation', aiGeneratedDraft.teachers_presentation);
+    setValue('objectives', stripHtmlTags(aiGeneratedDraft.objectives));
+    setValue('materials', stripHtmlTags(aiGeneratedDraft.materials));
+    setValue('introduction', stripHtmlTags(aiGeneratedDraft.introduction));
+    setValue('teachers_presentation', stripHtmlTags(aiGeneratedDraft.teachers_presentation));
     setValue('main_content', aiGeneratedDraft.main_content);
-    setValue('evaluation', aiGeneratedDraft.evaluation);
-    setValue('assignment', aiGeneratedDraft.assignment);
+    setValue('evaluation', stripHtmlTags(aiGeneratedDraft.evaluation));
+    setValue('assignment', stripHtmlTags(aiGeneratedDraft.assignment));
 
     toast.success('AI-generated content inserted. Review and save your note.');
     setIsAiPanelOpen(false);

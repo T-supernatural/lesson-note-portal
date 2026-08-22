@@ -16,6 +16,8 @@ A simple React + Vite portal for teachers to draft and submit lesson notes, and 
 
 ## Supabase Setup
 
+For a new or replacement Supabase project, follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+
 1. Create a Supabase project.
 2. Open SQL editor and run the statements in `db/schema.sql`.
 3. Create user accounts in Supabase Auth for admin and teachers.
