@@ -16,10 +16,8 @@ create table if not exists lesson_notes (
   teacher_id uuid references profiles(id) on delete cascade,
   subject text not null,
   class_level text not null,
-  academic_session text not null default '2025/26',
   term text not null,
   week text not null,
-  lesson_day text not null default 'Unspecified',
   topic text not null,
   objectives text not null,
   materials text not null,
@@ -34,15 +32,6 @@ create table if not exists lesson_notes (
   updated_at timestamp with time zone default now(),
   submitted_at timestamp with time zone
 );
-
-alter table lesson_notes add column if not exists academic_session text;
-alter table lesson_notes add column if not exists lesson_day text;
-update lesson_notes set academic_session = '2025/26' where academic_session is null;
-update lesson_notes set lesson_day = 'Unspecified' where lesson_day is null;
-alter table lesson_notes alter column academic_session set default '2025/26';
-alter table lesson_notes alter column academic_session set not null;
-alter table lesson_notes alter column lesson_day set default 'Unspecified';
-alter table lesson_notes alter column lesson_day set not null;
 
 create or replace function is_admin(user_id uuid)
 returns boolean
@@ -106,7 +95,7 @@ create policy lesson_notes_update_admin on lesson_notes
 
 create policy lesson_notes_delete_teacher on lesson_notes
   for delete
-  using (teacher_id = auth.uid() AND status = 'draft');
+  using (teacher_id = auth.uid());
 
 create policy lesson_notes_delete_admin on lesson_notes
   for delete

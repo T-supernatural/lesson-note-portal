@@ -16,8 +16,6 @@ import PageHeader from '../components/PageHeader';
 const classLevels = ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Jss 1', 'Jss 2', 'Jss 3', 'Ss 1', 'Ss 2', 'Ss 3'];
 const terms = ['Term 1', 'Term 2', 'Term 3'];
 const weeks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
-const academicSessions = ['2025/26', '2026/27'];
-const lessonDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const AUTO_SAVE_DELAY_MS = 1800;
 
 const learningLevels = ['Simple', 'Moderate', 'Advanced'] as const;
@@ -36,10 +34,8 @@ type AiGeneratedDraft = AiGeneratedLessonNote;
 const formFields = [
   'subject',
   'class_level',
-  'academic_session',
   'term',
   'week',
-  'lesson_day',
   'topic',
   'objectives',
   'materials',
@@ -119,10 +115,7 @@ const NoteFormPage = () => {
     watch,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<Record<string, string>>({
-    mode: 'onTouched',
-    defaultValues: { academic_session: '2026/27' },
-  });
+  } = useForm<Record<string, string>>({ mode: 'onTouched' });
 
   const mainContent = watch('main_content');
   const watchedValues = useWatch({ control });
@@ -266,10 +259,8 @@ const NoteFormPage = () => {
           reset({
             subject: note.subject,
             class_level: note.class_level,
-            academic_session: note.academic_session || '2025/26',
             term: note.term,
             week: note.week,
-            lesson_day: note.lesson_day || 'Unspecified',
             topic: note.topic,
             objectives: note.objectives,
             materials: note.materials,
@@ -381,10 +372,8 @@ const NoteFormPage = () => {
       reset({
         subject: last.subject,
         class_level: last.class_level,
-        academic_session: last.academic_session || '2025/26',
         term: last.term,
         week: last.week,
-        lesson_day: last.lesson_day || 'Unspecified',
         topic: last.topic,
         objectives: last.objectives,
         materials: last.materials,
@@ -416,10 +405,8 @@ const NoteFormPage = () => {
       teacher_id: profile.id,
       subject: data.subject,
       class_level: data.class_level,
-      academic_session: data.academic_session,
       term: data.term,
       week: data.week,
-      lesson_day: data.lesson_day,
       topic: data.topic,
       objectives: data.objectives,
       materials: data.materials,
@@ -700,7 +687,7 @@ const NoteFormPage = () => {
           ) : null}
 
           <form className="space-y-6" onSubmit={handleSubmit((data) => onSubmit(data, 'draft'))}>
-            <div className="grid gap-4 lg:grid-cols-4">
+            <div className="grid gap-4 lg:grid-cols-3">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Subject</label>
                 <Input {...register('subject', { required: 'Subject is required' })} placeholder="Mathematics" disabled={noteLocked} />
@@ -715,14 +702,6 @@ const NoteFormPage = () => {
                   ))}
                 </Select>
                 {errors.class_level && <p className="mt-1 text-sm text-rose-600">{errors.class_level.message}</p>}
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Academic session</label>
-                <Select {...register('academic_session', { required: 'Academic session is required' })} disabled={noteLocked}>
-                  <option value="">Select session</option>
-                  {academicSessions.map((session) => <option key={session} value={session}>{session}</option>)}
-                </Select>
-                {errors.academic_session && <p className="mt-1 text-sm text-rose-600">{errors.academic_session.message}</p>}
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Term</label>
@@ -751,14 +730,6 @@ const NoteFormPage = () => {
                 <label className="mb-2 block text-sm font-medium text-slate-700">Topic</label>
                 <Input {...register('topic', { required: 'Topic is required' })} placeholder="Lesson topic" disabled={noteLocked} />
                 {errors.topic && <p className="mt-1 text-sm text-rose-600">{errors.topic.message}</p>}
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Lesson day</label>
-                <Select {...register('lesson_day', { required: 'Lesson day is required' })} disabled={noteLocked}>
-                  <option value="">Select day</option>
-                  {lessonDays.map((day) => <option key={day} value={day}>{day}</option>)}
-                </Select>
-                {errors.lesson_day && <p className="mt-1 text-sm text-rose-600">{errors.lesson_day.message}</p>}
               </div>
             </div>
 
