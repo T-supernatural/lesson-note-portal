@@ -16,8 +16,10 @@ export type LessonNote = {
   teacher_id: string;
   subject: string;
   class_level: string;
+  academic_session: string;
   term: string;
   week: string;
+  lesson_day: string;
   topic: string;
   objectives: string;
   materials: string;

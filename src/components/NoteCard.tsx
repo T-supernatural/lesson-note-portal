@@ -10,10 +10,10 @@ const NoteCard = ({ note, onDelete, isDeleting }: { note: LessonNote; onDelete?:
         <div className="flex-1">
           <div className="flex items-center gap-2 text-slate-500">
             <Bookmark className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-[0.24em]">Week {note.week} • {note.subject}</span>
+            <span className="text-xs uppercase tracking-[0.24em]">{note.academic_session} • {note.term} • Week {note.week}</span>
           </div>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">{note.topic}</h2>
-          <p className="mt-2 text-sm text-slate-600">{note.class_level} • {note.term}</p>
+          <p className="mt-2 text-sm text-slate-600">{note.class_level} • {note.subject} • {note.lesson_day}</p>
           
           {note.admin_comment && note.status === 'rejected' && (
             <div className="mt-3 rounded-lg bg-rose-50 p-3 border border-rose-200">

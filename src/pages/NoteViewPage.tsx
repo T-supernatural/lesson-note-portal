@@ -64,7 +64,7 @@ const NoteViewPage = () => {
         <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft">
           <PageHeader 
             title={note.topic} 
-            description={`${note.subject} • ${note.class_level} • Week ${note.week}`}
+            description={`${note.subject} • ${note.class_level} • ${note.academic_session} • ${note.term}`}
           />
           
           <div className="mb-6 flex items-center justify-between">
@@ -75,8 +75,16 @@ const NoteViewPage = () => {
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Academic session</p>
+                <p className="mt-2 text-sm text-slate-600">{note.academic_session}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
                 <p className="text-sm font-semibold text-slate-900">Term</p>
                 <p className="mt-2 text-sm text-slate-600">{note.term}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Lesson day</p>
+                <p className="mt-2 text-sm text-slate-600">{note.lesson_day}</p>
               </div>
               <div className="rounded-3xl bg-slate-50 p-4">
                 <p className="text-sm font-semibold text-slate-900">Class Level</p>

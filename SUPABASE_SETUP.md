@@ -19,6 +19,8 @@ The anon key is intended for browser use, but it is only safe when Row Level Sec
 
 The script creates the tables, enables RLS, creates the role policies, and provisions the public read/authenticated upload policy required by the current rich-text editor.
 
+It also adds `academic_session` and `lesson_day` to lesson notes. Existing rows are assigned `2025/26` and `Unspecified` so the migration does not lose or hide the previous session. New notes created by the app default to `2026/27` and require a lesson day.
+
 ## 3. Configure Auth
 
 In **Authentication > URL Configuration**:
@@ -55,7 +57,22 @@ VITE_GEMINI_MODEL="gemini-2.5-flash"
 
 The current AI implementation also expects `VITE_GEMINI_API_KEY`, but that key is exposed in the browser and should not be used for the protected production setup. Before enabling AI again, move Gemini calls to a server-side endpoint or Supabase Edge Function. Rotate any previously exposed Gemini key.
 
-## 5. Configure Netlify
+The repository now includes the server-side function at `supabase/functions/generate-lesson-note`.
+
+## 5. Deploy the AI function
+
+Install and authenticate the Supabase CLI, then run these commands from the repository root:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase secrets set GEMINI_API_KEY=YOUR_NEW_GEMINI_API_KEY
+supabase functions deploy generate-lesson-note
+```
+
+The function uses the authenticated Supabase session sent by the app. Do not add `GEMINI_API_KEY` to `.env`, Netlify, or any `VITE_` variable.
+
+## 6. Configure Netlify
 
 In the Netlify site settings, add the same Supabase URL and anon key as environment variables for the deploy context:
 
@@ -64,7 +81,7 @@ In the Netlify site settings, add the same Supabase URL and anon key as environm
 
 Do not upload `.env` or commit it. The repository `.gitignore` already excludes it.
 
-## 6. Verify the connection
+## 7. Verify the connection
 
 Run locally:
 
@@ -84,6 +101,7 @@ Then verify:
 6. A rejected note can be edited and resubmitted.
 7. Rich-text image upload works in the `lesson-content` bucket.
 8. Password reset redirects back to `/reset-password`.
+9. AI generation works after the Edge Function is deployed.
 
 ## Security note
 
