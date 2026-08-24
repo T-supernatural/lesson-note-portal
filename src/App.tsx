@@ -10,6 +10,9 @@ import NoteViewPage from './pages/NoteViewPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminNotesPage from './pages/AdminNotesPage';
 import AdminReviewPage from './pages/AdminReviewPage';
+import AdminTeachersPage from './pages/AdminTeachersPage';
+import AdminMissingNotesPage from './pages/AdminMissingNotesPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import ProtectedRoute from './layouts/ProtectedRoute';
 
 function App() {
@@ -91,6 +94,30 @@ function App() {
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminReviewPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/teachers"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminTeachersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/missing-notes"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminMissingNotesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminAnalyticsPage />
           </ProtectedRoute>
         }
       />

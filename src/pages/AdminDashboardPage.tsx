@@ -50,6 +50,9 @@ const AdminDashboardPage = () => {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={() => navigate('/admin/notes')}>View all notes</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/teachers')}>Manage teachers</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/missing-notes')}>Missing notes</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/analytics')}>Analytics</Button>
             <Button variant="secondary" onClick={signOut}>Sign Out</Button>
           </div>
         </div>

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchTeacherNotes } from '../services/notes';
+import { fetchNotifications, markNotificationRead } from '../services/notifications';
+import type { Notification } from '../types';
+import toast from 'react-hot-toast';
 import Button from '../components/Button';
 import PageHeader from '../components/PageHeader';
 import StatsCard from '../components/StatsCard';
@@ -12,6 +15,8 @@ const TeacherDashboardPage = () => {
   const { profile, signOut } = useAuth();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +26,9 @@ const TeacherDashboardPage = () => {
       .then(setNotes)
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetchNotifications(profile.id)
+      .then(setNotifications)
+      .catch(() => setNotificationsError('Review updates could not be loaded.'));
   }, [profile]);
 
   const stats = useMemo(() => {
@@ -75,7 +83,7 @@ const TeacherDashboardPage = () => {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{note.topic}</p>
-                      <p className="mt-1 text-sm text-slate-500">Week {note.week} • {note.subject}</p>
+                      <p className="mt-1 text-sm text-slate-500">{note.academic_session_id ? 'Session assigned' : 'Session unassigned'} • Week {note.week} • {note.subject}</p>
                     </div>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-600">{note.status}</span>
                   </div>
@@ -85,6 +93,26 @@ const TeacherDashboardPage = () => {
             </div>
           )}
         </div>
+        {notificationsError ? <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{notificationsError}</div> : null}
+        {notifications.length > 0 ? (
+          <div className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6 shadow-soft">
+            <PageHeader title="Review updates" description="Recent feedback from your school administrator." />
+            <div className="mt-4 space-y-3">
+              {notifications.map((notification) => (
+                <div key={notification.id} className={`rounded-2xl border p-4 ${notification.read_at ? 'border-slate-200 bg-slate-50' : 'border-sky-200 bg-sky-50'}`}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div><p className="text-sm font-semibold text-slate-900">{notification.title}</p><p className="mt-1 text-sm text-slate-600">{notification.message}</p></div>
+                    <div className="flex flex-wrap gap-2">
+                      {notification.lesson_note_id ? <Button type="button" variant="secondary" onClick={() => navigate(`/notes/${notification.lesson_note_id}`)}>Open note</Button> : null}
+                      {!notification.read_at ? <Button type="button" variant="outline" onClick={async () => { try { await markNotificationRead(notification.id); setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item)); } catch { toast.error('Unable to mark notification as read'); } }}>Mark read</Button> : null}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">{new Date(notification.created_at).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

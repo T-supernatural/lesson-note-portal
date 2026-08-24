@@ -38,4 +38,4 @@ set
   full_name = excluded.full_name,
   email = excluded.email,
   role = excluded.role,
-  subject = excluded.subject;
+  subject = excluded.subject; 

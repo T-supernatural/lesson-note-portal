@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createLessonNote, fetchNoteById, fetchTeacherNotes, updateLessonNote } from '../services/notes';
+import { fetchAcademicSessions } from '../services/sessions';
+import type { AcademicSession } from '../types';
 import { generateLessonNote, stripHtmlTags, type AiGeneratedLessonNote, type AiLessonGenerationRequest } from '../lib/gemini';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -20,6 +22,51 @@ const AUTO_SAVE_DELAY_MS = 1800;
 
 const learningLevels = ['Simple', 'Moderate', 'Advanced'] as const;
 
+const curriculumTemplates = [
+  {
+    id: 'standard',
+    name: 'Standard lesson',
+    description: 'A balanced structure for introducing and practising a new topic.',
+    values: {
+      objectives: 'By the end of the lesson, learners should be able to:\n1. Define the key concept.\n2. Explain the main ideas in their own words.\n3. Apply the concept in a guided activity.',
+      materials: 'Board and markers\nTextbooks or learner resources\nRelevant classroom examples',
+      introduction: 'Begin with a short question, example, or familiar situation that connects the topic to learners’ experience.',
+      teachers_presentation: 'Explain the concept step by step. Model one example, ask checking questions, and guide learners through a second example.',
+      main_content: '<h2>Lesson development</h2><ol><li>Introduce the key idea and connect it to prior knowledge.</li><li>Model the process with a clear example.</li><li>Guide learners through a classroom activity.</li><li>Review the main points and address misconceptions.</li></ol>',
+      evaluation: 'Ask learners to explain the key idea and complete a short individual or paired task.',
+      assignment: 'Give learners a short practice task that applies the lesson to a new example.',
+    },
+  },
+  {
+    id: 'activity',
+    name: 'Activity-based lesson',
+    description: 'A practical structure centred on learner participation.',
+    values: {
+      objectives: 'By the end of the lesson, learners should be able to:\n1. Describe the topic using an example.\n2. Work cooperatively to complete an activity.\n3. Share what they discovered with the class.',
+      materials: 'Activity cards or worksheets\nLearning materials for groups\nBoard and markers',
+      introduction: 'Present a problem or demonstration and ask learners to predict what will happen before the activity begins.',
+      teachers_presentation: 'Explain the activity instructions, model the expected outcome, and support groups with guiding questions.',
+      main_content: '<h2>Activity sequence</h2><ol><li>Form small groups and explain the task.</li><li>Allow learners to investigate, practise, or create.</li><li>Invite groups to present their findings.</li><li>Summarise the shared learning.</li></ol>',
+      evaluation: 'Assess participation and ask each group to explain one result, observation, or solution.',
+      assignment: 'Learners record one new idea from the activity and apply it to a similar situation at home.',
+    },
+  },
+  {
+    id: 'revision',
+    name: 'Revision lesson',
+    description: 'A review structure for consolidating previous learning.',
+    values: {
+      objectives: 'By the end of the lesson, learners should be able to:\n1. Recall the main ideas from the unit.\n2. Identify areas that need more practice.\n3. Complete revision questions with improved accuracy.',
+      materials: 'Revision questions\nLearner notebooks\nBoard and markers',
+      introduction: 'Use a quick recall question or short quiz to revisit the most important ideas from the previous lessons.',
+      teachers_presentation: 'Review common errors, revisit difficult examples, and model strategies for answering revision questions.',
+      main_content: '<h2>Revision activities</h2><ol><li>Review key terms, rules, or steps.</li><li>Complete guided revision questions.</li><li>Discuss answers and correct misconceptions.</li><li>Complete an independent exit task.</li></ol>',
+      evaluation: 'Use the exit task to identify which concepts learners understand and which require follow-up support.',
+      assignment: 'Complete the unanswered revision questions and review the corrections made in class.',
+    },
+  },
+] as const;
+
 type LocalDraft = {
   savedAt: string;
   noteId: string;
@@ -34,8 +81,11 @@ type AiGeneratedDraft = AiGeneratedLessonNote;
 const formFields = [
   'subject',
   'class_level',
+  'academic_session_id',
   'term',
   'week',
+  'lesson_day',
+  'lesson_date',
   'topic',
   'objectives',
   'materials',
@@ -81,6 +131,8 @@ const NoteFormPage = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessions, setSessions] = useState<AcademicSession[]>([]);
   const [noteLocked, setNoteLocked] = useState(false);
   const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [existingNote, setExistingNote] = useState<any>(null);
@@ -92,6 +144,7 @@ const NoteFormPage = () => {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiGeneratedDraft, setAiGeneratedDraft] = useState<AiGeneratedDraft | null>(null);
   const [aiGenerationMode, setAiGenerationMode] = useState<'short' | 'detailed'>('short');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   const [aiForm, setAiForm] = useState<AiGenerationRequest>({
     subject: '',
     classLevel: '',
@@ -124,6 +177,20 @@ const NoteFormPage = () => {
     return `lesson-note-autosave:${profile.id}:${id ?? 'new'}`;
   }, [id, profile]);
 
+  useEffect(() => {
+    if (!profile) return;
+    fetchAcademicSessions()
+      .then((availableSessions) => {
+        setSessions(availableSessions);
+        if (!id && !watchedValues.academic_session_id) {
+          const activeSession = availableSessions.find((session) => session.is_active);
+          if (activeSession) setValue('academic_session_id', activeSession.id);
+        }
+      })
+      .catch(() => toast.error('Unable to load academic sessions'))
+      .finally(() => setSessionsLoading(false));
+  }, [id, profile, setValue, watchedValues.academic_session_id]);
+
   const openAiPanel = () => {
     setAiForm((current) => ({
       ...current,
@@ -140,6 +207,14 @@ const NoteFormPage = () => {
   const closeAiPanel = () => {
     setIsAiPanelOpen(false);
     setAiError(null);
+  };
+
+  const applyCurriculumTemplate = () => {
+    const template = curriculumTemplates.find((item) => item.id === selectedTemplate);
+    if (!template) return;
+    if (hasDraftContent(watchedValues as Record<string, string>) && !window.confirm('Applying a template will replace the lesson content fields. Continue?')) return;
+    Object.entries(template.values).forEach(([field, value]) => setValue(field, value));
+    toast.success(`${template.name} template applied. Review the content before saving.`);
   };
 
   const generateAiDraft = async () => {
@@ -259,8 +334,11 @@ const NoteFormPage = () => {
           reset({
             subject: note.subject,
             class_level: note.class_level,
+            academic_session_id: note.academic_session_id || '',
             term: note.term,
             week: note.week,
+            lesson_day: note.lesson_day || '',
+            lesson_date: note.lesson_date || '',
             topic: note.topic,
             objectives: note.objectives,
             materials: note.materials,
@@ -372,8 +450,11 @@ const NoteFormPage = () => {
       reset({
         subject: last.subject,
         class_level: last.class_level,
+        academic_session_id: last.academic_session_id || '',
         term: last.term,
         week: last.week,
+        lesson_day: last.lesson_day || '',
+        lesson_date: last.lesson_date || '',
         topic: last.topic,
         objectives: last.objectives,
         materials: last.materials,
@@ -405,8 +486,11 @@ const NoteFormPage = () => {
       teacher_id: profile.id,
       subject: data.subject,
       class_level: data.class_level,
+      academic_session_id: data.academic_session_id || null,
       term: data.term,
       week: data.week,
+      lesson_day: data.lesson_day || null,
+      lesson_date: data.lesson_date || null,
       topic: data.topic,
       objectives: data.objectives,
       materials: data.materials,
@@ -435,7 +519,7 @@ const NoteFormPage = () => {
     }
   };
 
-  if (loading) {
+  if (loading || sessionsLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading note…</div>;
   }
 
@@ -686,8 +770,30 @@ const NoteFormPage = () => {
             </div>
           ) : null}
 
+          {!noteLocked ? (
+            <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-sky-950">Start from a curriculum template</p>
+                  <p className="mt-1 text-sm text-sky-800">Use a prepared lesson structure, then adapt it to your class and topic.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <label className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-900">
+                    Template
+                    <Select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)} aria-label="Curriculum template">
+                      <option value="">Choose a template</option>
+                      {curriculumTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+                    </Select>
+                  </label>
+                  <Button type="button" variant="secondary" onClick={applyCurriculumTemplate} disabled={!selectedTemplate}>Apply template</Button>
+                </div>
+              </div>
+              {selectedTemplate ? <p className="mt-3 text-xs text-sky-800">{curriculumTemplates.find((template) => template.id === selectedTemplate)?.description}</p> : null}
+            </div>
+          ) : null}
+
           <form className="space-y-6" onSubmit={handleSubmit((data) => onSubmit(data, 'draft'))}>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Subject</label>
                 <Input {...register('subject', { required: 'Subject is required' })} placeholder="Mathematics" disabled={noteLocked} />
@@ -702,6 +808,14 @@ const NoteFormPage = () => {
                   ))}
                 </Select>
                 {errors.class_level && <p className="mt-1 text-sm text-rose-600">{errors.class_level.message}</p>}
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Academic session</label>
+                <Select {...register('academic_session_id', { required: !id ? 'Academic session is required' : false })} disabled={noteLocked}>
+                  <option value="">Unassigned session</option>
+                  {sessions.map((session) => <option key={session.id} value={session.id}>{session.name}{session.is_active ? ' (Active)' : ''}</option>)}
+                </Select>
+                {errors.academic_session_id && <p className="mt-1 text-sm text-rose-600">{errors.academic_session_id.message}</p>}
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Term</label>
@@ -731,6 +845,19 @@ const NoteFormPage = () => {
                 <Input {...register('topic', { required: 'Topic is required' })} placeholder="Lesson topic" disabled={noteLocked} />
                 {errors.topic && <p className="mt-1 text-sm text-rose-600">{errors.topic.message}</p>}
               </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Lesson day</label>
+                <Select {...register('lesson_day', { required: !id ? 'Lesson day is required' : false })} disabled={noteLocked}>
+                  <option value="">Unspecified</option>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => <option key={day} value={day}>{day}</option>)}
+                </Select>
+                {errors.lesson_day && <p className="mt-1 text-sm text-rose-600">{errors.lesson_day.message}</p>}
+              </div>
+            </div>
+
+            <div className="max-w-sm">
+              <label className="mb-2 block text-sm font-medium text-slate-700">Lesson date (optional)</label>
+              <Input type="date" {...register('lesson_date')} disabled={noteLocked} />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">

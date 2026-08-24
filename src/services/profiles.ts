@@ -11,6 +11,29 @@ export const fetchTeachers = async () => {
   return (data as Profile[]) ?? [];
 };
 
+export const fetchActiveTeachers = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .order('full_name', { ascending: true });
+  if (error) throw error;
+  return (data as Profile[]) ?? [];
+};
+
+export const updateTeacherProfile = async (teacherId: string, updates: Pick<Profile, 'full_name' | 'email' | 'subject' | 'is_active'>) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', teacherId)
+    .eq('role', 'teacher')
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Profile;
+};
+
 export const fetchProfileCounts = async () => {
   const { data, error } = await supabase.rpc('count_profiles');
   if (error) throw error;

@@ -5,6 +5,10 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { fetchNoteById, updateLessonNote } from '../services/notes';
+import { fetchAcademicSessions } from '../services/sessions';
+import { createNoteReview, fetchNoteReviews } from '../services/reviews';
+import { createNotification } from '../services/notifications';
+import type { LessonNoteReview } from '../types';
 import Button from '../components/Button';
 import StatusBadge from '../components/StatusBadge';
 import PageHeader from '../components/PageHeader';
@@ -17,6 +21,10 @@ const AdminReviewPage = () => {
   const { profile, signOut } = useAuth();
   const [note, setNote] = useState<any>(null);
   const [teacherName, setTeacherName] = useState('Teacher');
+  const [sessionName, setSessionName] = useState('Unassigned');
+  const [reviews, setReviews] = useState<LessonNoteReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { register, handleSubmit } = useForm({ defaultValues: { admin_comment: '' } });
 
@@ -26,6 +34,16 @@ const AdminReviewPage = () => {
     fetchNoteById(id)
       .then(async (data) => {
         setNote(data);
+        setReviewsLoading(true);
+        fetchNoteReviews(data.id)
+          .then(setReviews)
+          .catch(() => setReviewsError('Review history could not be loaded.'))
+          .finally(() => setReviewsLoading(false));
+        if (data.academic_session_id) {
+          fetchAcademicSessions().then((sessions) => {
+            setSessionName(sessions.find((session) => session.id === data.academic_session_id)?.name || 'Unassigned');
+          });
+        }
         if (data?.teacher_id) {
           const { data: teacherData } = await supabase.from('profiles').select('full_name').eq('id', data.teacher_id).single();
           setTeacherName(teacherData?.full_name ?? 'Teacher');
@@ -43,8 +61,21 @@ const AdminReviewPage = () => {
         admin_comment: values.admin_comment,
         updated_at: new Date().toISOString(),
       });
+      const review = await createNoteReview({
+        lesson_note_id: note.id,
+        admin_id: profile!.id,
+        status,
+        comment: values.admin_comment || null,
+      });
+      await createNotification({
+        user_id: note.teacher_id,
+        lesson_note_id: note.id,
+        title: status === 'approved' ? 'Lesson note approved' : 'Changes requested on lesson note',
+        message: values.admin_comment || (status === 'approved' ? 'Your lesson note has been approved.' : 'Please review and update your lesson note.'),
+      });
+      setReviews((current) => [review, ...current]);
+      setNote((current: any) => current ? { ...current, status, admin_comment: values.admin_comment } : current);
       toast.success(status === 'approved' ? 'Note approved' : 'Note rejected');
-      navigate('/admin/notes');
     } catch (error: any) {
       toast.error(error?.message || 'Unable to update note');
     }
@@ -75,12 +106,20 @@ const AdminReviewPage = () => {
 
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft">
-            <PageHeader title={note.topic} description={`Submitted by ${teacherName} • ${note.subject} • Week ${note.week}`} />
+            <PageHeader title={note.topic} description={`Submitted by ${teacherName} • ${note.subject} • ${note.term} • Week ${note.week}`} />
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-3xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Academic session</p>
+                  <p className="mt-2 text-sm text-slate-600">{sessionName}</p>
+                </div>
+                <div className="rounded-3xl bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-900">Class level</p>
                   <p className="mt-2 text-sm text-slate-600">{note.class_level}</p>
+                </div>
+                <div className="rounded-3xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Lesson day</p>
+                  <p className="mt-2 text-sm text-slate-600">{note.lesson_day || 'Unspecified'}</p>
                 </div>
                 <div className="rounded-3xl bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-900">Submitted</p>
@@ -128,6 +167,24 @@ const AdminReviewPage = () => {
               <h2 className="text-lg font-semibold text-slate-900">Review actions</h2>
               <StatusBadge status={note.status} />
             </div>
+            {reviewsLoading ? <p className="mt-6 text-sm text-slate-500">Loading review history…</p> : null}
+            {reviewsError ? <p className="mt-6 text-sm text-rose-700">{reviewsError}</p> : null}
+            {!reviewsLoading && !reviewsError && reviews.length > 0 ? (
+              <div className="mt-6 border-t border-slate-200 pt-6">
+                <h3 className="text-sm font-semibold text-slate-900">Review history</h3>
+                <div className="mt-3 space-y-3">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="rounded-2xl bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide">
+                        <span className={review.status === 'approved' ? 'text-emerald-700' : 'text-rose-700'}>{review.status}</span>
+                        <span className="text-slate-500">{new Date(review.created_at).toLocaleString()}</span>
+                      </div>
+                      {review.comment ? <p className="mt-2 text-sm text-slate-600">{review.comment}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <form className="mt-6 space-y-5" onSubmit={handleSubmit((data) => submitReview('rejected', data))}>
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Admin comment</label>

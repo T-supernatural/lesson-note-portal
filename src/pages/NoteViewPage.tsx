@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchNoteById } from '../services/notes';
+import { fetchAcademicSessions } from '../services/sessions';
 import Button from '../components/Button';
 import StatusBadge from '../components/StatusBadge';
 import PageHeader from '../components/PageHeader';
@@ -14,6 +15,7 @@ const NoteViewPage = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [note, setNote] = useState<any>(null);
+  const [sessionName, setSessionName] = useState('Unassigned session');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +25,11 @@ const NoteViewPage = () => {
       .then((data) => {
         if (data.teacher_id === profile.id) {
           setNote(data);
+          if (data.academic_session_id) {
+            fetchAcademicSessions().then((sessions) => {
+              setSessionName(sessions.find((session) => session.id === data.academic_session_id)?.name || 'Unassigned session');
+            });
+          }
         } else {
           toast.error('You do not have permission to view this note.');
           navigate('/notes');
@@ -64,7 +71,7 @@ const NoteViewPage = () => {
         <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft">
           <PageHeader 
             title={note.topic} 
-            description={`${note.subject} • ${note.class_level} • Week ${note.week}`}
+            description={`${note.subject} • ${note.class_level} • ${sessionName} • ${note.term}`}
           />
           
           <div className="mb-6 flex items-center justify-between">
@@ -75,6 +82,10 @@ const NoteViewPage = () => {
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Academic session</p>
+                <p className="mt-2 text-sm text-slate-600">{sessionName}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
                 <p className="text-sm font-semibold text-slate-900">Term</p>
                 <p className="mt-2 text-sm text-slate-600">{note.term}</p>
               </div>
@@ -82,6 +93,11 @@ const NoteViewPage = () => {
                 <p className="text-sm font-semibold text-slate-900">Class Level</p>
                 <p className="mt-2 text-sm text-slate-600">{note.class_level}</p>
               </div>
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Lesson day</p>
+                <p className="mt-2 text-sm text-slate-600">{note.lesson_day || 'Unspecified'}</p>
+              </div>
+              {note.lesson_date ? <div className="rounded-3xl bg-slate-50 p-4"><p className="text-sm font-semibold text-slate-900">Lesson date</p><p className="mt-2 text-sm text-slate-600">{note.lesson_date}</p></div> : null}
             </div>
 
             <section>
