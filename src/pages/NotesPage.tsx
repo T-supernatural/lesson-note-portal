@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { deleteLessonNote, fetchTeacherNotes } from '../services/notes';
 import Button from '../components/Button';
 import NoteCard from '../components/NoteCard';

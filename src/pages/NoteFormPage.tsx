@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { createLessonNote, fetchNoteById, fetchTeacherNotes, updateLessonNote } from '../services/notes';
-import { fetchAcademicSessions } from '../services/sessions';
+import { fetchSelectableAcademicSessions } from '../services/sessions';
 import type { AcademicSession } from '../types';
 import { generateLessonNote, stripHtmlTags, type AiGeneratedLessonNote, type AiLessonGenerationRequest } from '../lib/gemini';
 import Button from '../components/Button';
@@ -179,7 +179,7 @@ const NoteFormPage = () => {
 
   useEffect(() => {
     if (!profile) return;
-    fetchAcademicSessions()
+    fetchSelectableAcademicSessions()
       .then((availableSessions) => {
         setSessions(availableSessions);
         if (!id && !watchedValues.academic_session_id) {

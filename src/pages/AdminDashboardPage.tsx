@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FileText, Clock3, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import Button from '../components/Button';
 import PageHeader from '../components/PageHeader';
 import StatsCard from '../components/StatsCard';
@@ -53,6 +53,8 @@ const AdminDashboardPage = () => {
             <Button variant="outline" onClick={() => navigate('/admin/teachers')}>Manage teachers</Button>
             <Button variant="outline" onClick={() => navigate('/admin/missing-notes')}>Missing notes</Button>
             <Button variant="outline" onClick={() => navigate('/admin/analytics')}>Analytics</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/sessions')}>Sessions</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/deadlines')}>Deadlines</Button>
             <Button variant="secondary" onClick={signOut}>Sign Out</Button>
           </div>
         </div>

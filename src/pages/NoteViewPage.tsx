@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchNoteById } from '../services/notes';
 import { fetchAcademicSessions } from '../services/sessions';
 import Button from '../components/Button';

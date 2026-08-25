@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/auth-context';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -13,6 +13,8 @@ import AdminReviewPage from './pages/AdminReviewPage';
 import AdminTeachersPage from './pages/AdminTeachersPage';
 import AdminMissingNotesPage from './pages/AdminMissingNotesPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminSessionsPage from './pages/AdminSessionsPage';
+import AdminDeadlinesPage from './pages/AdminDeadlinesPage';
 import ProtectedRoute from './layouts/ProtectedRoute';
 
 function App() {
@@ -118,6 +120,22 @@ function App() {
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminSessionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/deadlines"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminDeadlinesPage />
           </ProtectedRoute>
         }
       />

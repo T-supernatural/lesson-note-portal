@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchTeachers, updateTeacherProfile } from '../services/profiles';
 import type { Profile } from '../types';
 import Button from '../components/Button';

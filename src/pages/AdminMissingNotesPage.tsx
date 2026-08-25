@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchFilteredNotes } from '../services/notes';
 import { fetchActiveTeachers } from '../services/profiles';
 import { fetchAcademicSessions } from '../services/sessions';
-import type { AcademicSession, LessonNote, Profile } from '../types';
+import { fetchSubmissionDeadlines } from '../services/deadlines';
+import type { AcademicSession, LessonNote, Profile, SubmissionDeadline } from '../types';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
@@ -37,13 +38,14 @@ const AdminMissingNotesPage = () => {
   const [loading, setLoading] = useState(true);
   const [reportLoading, setReportLoading] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const [deadlines, setDeadlines] = useState<SubmissionDeadline[]>([]);
   const [reportFilters, setReportFilters] = useState<ReportFilters>(emptyFilters);
   const { register, handleSubmit, reset } = useForm<ReportFilters>({ defaultValues: emptyFilters });
 
   useEffect(() => {
     if (!profile) return;
-    Promise.all([fetchActiveTeachers(), fetchAcademicSessions()])
-      .then(([teacherData, sessionData]) => { setTeachers(teacherData); setSessions(sessionData); })
+    Promise.all([fetchActiveTeachers(), fetchAcademicSessions(), fetchSubmissionDeadlines()])
+      .then(([teacherData, sessionData, deadlineData]) => { setTeachers(teacherData); setSessions(sessionData); setDeadlines(deadlineData); })
       .catch(() => toast.error('Unable to load report options'))
       .finally(() => setLoading(false));
   }, [profile]);
@@ -75,6 +77,15 @@ const AdminMissingNotesPage = () => {
   }, [notes, teachers]);
 
   const selectedSession = sessions.find((session) => session.id === reportFilters.session)?.name || 'all sessions';
+  const reportDeadline = deadlines.find((deadline) => (
+    deadline.is_active
+    &&
+    deadline.academic_session_id === reportFilters.session
+    && deadline.term === reportFilters.term
+    && deadline.week === reportFilters.week
+    && (!reportFilters.day || !deadline.lesson_day || deadline.lesson_day === reportFilters.day)
+  ));
+  const isOverdue = reportDeadline ? new Date(reportDeadline.due_at).getTime() < Date.now() : false;
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -94,7 +105,7 @@ const AdminMissingNotesPage = () => {
             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Day<Select {...register('day')}><option value="">All days</option>{days.map((day) => <option key={day} value={day}>{day}</option>)}</Select></label>
           </div>
         </form>
-        {loading ? <div className="rounded-[32px] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-soft">Loading report options…</div> : !hasRun ? <EmptyState title="Report not generated" subtitle="Choose a session, term, week, or other scope and generate the report." /> : missingTeachers.length === 0 ? <EmptyState title="All active teachers have submitted notes" subtitle={`No missing submissions found for ${selectedSession}.`} /> : <div className="rounded-[32px] border border-amber-200 bg-amber-50 p-6"><PageHeader title={`${missingTeachers.length} missing submission${missingTeachers.length === 1 ? '' : 's'}`} description="These active teachers have no non-draft note matching the selected scope." /><div className="mt-4 grid gap-3">{missingTeachers.map((teacher) => <div key={teacher.id} className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-slate-900">{teacher.full_name}</p><p className="text-sm text-slate-600">{teacher.email} • {teacher.subject || 'No subject assigned'}</p></div><Button variant="secondary" onClick={() => navigate('/admin/teachers')}>Manage teacher</Button></div>)}</div></div>}
+        {loading ? <div className="rounded-[32px] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-soft">Loading report options…</div> : !hasRun ? <EmptyState title="Report not generated" subtitle="Choose a session, term, week, or other scope and generate the report." /> : <>{reportDeadline ? <div className={`mb-4 rounded-2xl border p-4 text-sm ${isOverdue ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-sky-200 bg-sky-50 text-sky-900'}`}>{isOverdue ? 'This submission scope is overdue.' : 'Submission deadline'} Due {new Date(reportDeadline.due_at).toLocaleString()}.</div> : null}{missingTeachers.length === 0 ? <EmptyState title="All active teachers have submitted notes" subtitle={`No missing submissions found for ${selectedSession}.`} /> : <div className="rounded-[32px] border border-amber-200 bg-amber-50 p-6"><PageHeader title={`${missingTeachers.length} missing submission${missingTeachers.length === 1 ? '' : 's'}`} description="These active teachers have no non-draft note matching the selected scope." /><div className="mt-4 grid gap-3">{missingTeachers.map((teacher) => <div key={teacher.id} className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-slate-900">{teacher.full_name}</p><p className="text-sm text-slate-600">{teacher.email} • {teacher.subject || 'No subject assigned'}</p></div><Button variant="secondary" onClick={() => navigate('/admin/teachers')}>Manage teacher</Button></div>)}</div></div>}</>}
       </div>
     </div>
   );

@@ -37,6 +37,18 @@ export type AcademicSession = {
   starts_on: string | null;
   ends_on: string | null;
   is_active: boolean;
+  is_archived: boolean;
+  created_at: string;
+};
+
+export type SubmissionDeadline = {
+  id: string;
+  academic_session_id: string;
+  term: string;
+  week: string;
+  lesson_day: string | null;
+  due_at: string;
+  is_active: boolean;
   created_at: string;
 };
 

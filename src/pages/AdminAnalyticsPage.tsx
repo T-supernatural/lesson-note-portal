@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchAnalyticsNotes } from '../services/notes';
 import { fetchTeachers } from '../services/profiles';
 import { fetchAcademicSessions } from '../services/sessions';

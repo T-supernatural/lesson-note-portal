@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchNoteById, updateLessonNote } from '../services/notes';
 import { fetchAcademicSessions } from '../services/sessions';
 import { createNoteReview, fetchNoteReviews } from '../services/reviews';

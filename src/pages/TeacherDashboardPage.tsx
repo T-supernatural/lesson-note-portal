@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, CheckCircle2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { fetchTeacherNotes } from '../services/notes';
 import { fetchNotifications, markNotificationRead } from '../services/notifications';
-import type { Notification } from '../types';
+import { fetchActiveSubmissionDeadlines } from '../services/deadlines';
+import type { Notification, SubmissionDeadline } from '../types';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
 import PageHeader from '../components/PageHeader';
@@ -16,6 +17,7 @@ const TeacherDashboardPage = () => {
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [deadlines, setDeadlines] = useState<SubmissionDeadline[]>([]);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -29,7 +31,10 @@ const TeacherDashboardPage = () => {
     fetchNotifications(profile.id)
       .then(setNotifications)
       .catch(() => setNotificationsError('Review updates could not be loaded.'));
+    fetchActiveSubmissionDeadlines().then(setDeadlines).catch(() => {});
   }, [profile]);
+
+  const upcomingDeadlines = deadlines.filter((deadline) => new Date(deadline.due_at).getTime() > Date.now()).slice(0, 3);
 
   const stats = useMemo(() => {
     const count = (status: string) => notes.filter((note) => note.status === status).length;
@@ -94,6 +99,7 @@ const TeacherDashboardPage = () => {
           )}
         </div>
         {notificationsError ? <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{notificationsError}</div> : null}
+        {upcomingDeadlines.length > 0 ? <div className="mt-8 rounded-[32px] border border-sky-200 bg-sky-50 p-6"><PageHeader title="Upcoming deadlines" description="Submission dates set by your administrator." /><div className="mt-4 grid gap-3">{upcomingDeadlines.map((deadline) => <div key={deadline.id} className="rounded-2xl border border-sky-200 bg-white p-4"><p className="text-sm font-semibold text-slate-900">{deadline.term} • Week {deadline.week}{deadline.lesson_day ? ` • ${deadline.lesson_day}` : ''}</p><p className="mt-1 text-sm text-slate-600">Due {new Date(deadline.due_at).toLocaleString()}</p></div>)}</div></div> : null}
         {notifications.length > 0 ? (
           <div className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6 shadow-soft">
             <PageHeader title="Review updates" description="Recent feedback from your school administrator." />

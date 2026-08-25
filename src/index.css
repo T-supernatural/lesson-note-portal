@@ -28,6 +28,23 @@ textarea {
 
 /* Print styles for PDF export */
 @media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .admin-notes-page {
+    padding: 0;
+  }
+
+  .admin-notes-page > div {
+    max-width: none;
+  }
+
+  .admin-notes-page .rounded-\[28px\] {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
   body {
     background: white;
   }
