@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Bell, UserRound } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { useAuth } from "../context/auth-context";
 import { fetchTeacherNotes } from "../services/notes";
 import {
@@ -17,7 +17,7 @@ import EmptyState from "../components/EmptyState";
 import StatCard from "../components/StatCard";
 import ChartCard from "../components/ChartCard";
 import NotificationBell from "../components/NotificationBell";
-import BottomTabBar from "../components/BottomTabBar";
+import NavigationShell from "../components/NavigationShell";
 import LoadingState from "../components/LoadingState";
 import InlineError from "../components/InlineError";
 
@@ -75,7 +75,7 @@ const TeacherDashboardPage = () => {
   }, [notes]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] px-4 pb-24 pt-5 sm:px-6 md:pb-8 lg:px-8">
+    <NavigationShell role="teacher"><div className="min-h-screen bg-[var(--color-bg)] px-4 pb-24 pt-5 sm:px-6 md:pb-8 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -197,25 +197,7 @@ const TeacherDashboardPage = () => {
           </div>
         ) : null}
       </div>
-      <BottomTabBar
-        items={[
-          { label: "Dashboard", to: "/dashboard", icon: UserRound },
-          { label: "Notes", to: "/notes", icon: FileText },
-          { label: "New note", to: "/notes/new", icon: Plus, emphasized: true },
-          {
-            label: "Alerts",
-            icon: Bell,
-            onClick: () =>
-              document
-                .querySelector<HTMLButtonElement>(
-                  '[aria-label^="Notifications"]',
-                )
-                ?.click(),
-          },
-          { label: "More", icon: UserRound, onClick: signOut },
-        ]}
-      />
-    </div>
+    </div></NavigationShell>
   );
 };
 

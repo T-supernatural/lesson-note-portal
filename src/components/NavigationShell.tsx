@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { BarChart3, BookOpen, CalendarClock, ClipboardList, FilePlus2, LayoutDashboard, ListChecks, Settings2, Users } from 'lucide-react';
 import Sidebar from './Sidebar';
 import BottomTabBar from './BottomTabBar';
@@ -16,9 +16,15 @@ const adminItems = [
 
 const NavigationShell = ({ role, children }: { role: 'admin' | 'teacher'; children: ReactNode }) => {
   const { signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (role === 'admin') {
-    return <div className="min-h-screen md:flex"><Sidebar items={adminItems} /><main className="min-h-screen min-w-0 flex-1">{children}</main></div>;
+    return (
+      <div className="min-h-screen md:flex">
+        <Sidebar items={adminItems} mobileOpen={mobileMenuOpen} onMobileOpen={() => setMobileMenuOpen(true)} onMobileClose={() => setMobileMenuOpen(false)} onSignOut={signOut} />
+        <main className="min-h-screen min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
+      </div>
+    );
   }
 
   return <div className="min-h-screen"><main>{children}</main><BottomTabBar items={[{ label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard }, { label: 'Notes', to: '/notes', icon: BookOpen }, { label: 'New note', to: '/notes/new', icon: FilePlus2, emphasized: true }, { label: 'Sign out', icon: Settings2, onClick: signOut }]} /></div>;
