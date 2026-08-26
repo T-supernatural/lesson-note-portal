@@ -1,8 +1,8 @@
 const PageHeader = ({ title, description }: { title: string; description?: string }) => {
   return (
-    <div className="mb-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-soft">
-      <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-      {description ? <p className="mt-2 text-sm text-slate-600">{description}</p> : null}
+    <div className="mb-5">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{title}</h1>
+      {description ? <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{description}</p> : null}
     </div>
   );
 };
