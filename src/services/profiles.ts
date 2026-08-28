@@ -39,3 +39,20 @@ export const fetchProfileCounts = async () => {
   if (error) throw error;
   return data;
 };
+
+export type TeacherInvite = {
+  email: string;
+  full_name?: string;
+  subject?: string;
+};
+
+export const inviteTeachers = async (teachers: TeacherInvite[]) => {
+  const { data, error } = await supabase.functions.invoke('bulk-invite', {
+    body: {
+      teachers,
+      redirectTo: `${window.location.origin}/reset-password`,
+    },
+  });
+  if (error) throw error;
+  return data as { invited: string[]; failed: Array<{ email: string; error: string }> };
+};

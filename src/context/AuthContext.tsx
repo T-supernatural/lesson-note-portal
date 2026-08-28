@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, authUser = user) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -23,10 +23,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .from('profiles')
             .insert({
               id: userId,
-              full_name: user?.user_metadata?.full_name || 'New User',
-              email: user?.email || '',
+              full_name: authUser?.user_metadata?.full_name || 'New User',
+              email: authUser?.email || '',
               role: 'teacher', // default to teacher
-              subject: null,
+              subject: authUser?.user_metadata?.subject || null,
             })
             .select()
             .single();
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const sessionData = data.session;
       setSession(sessionData);
       setUser(sessionData?.user ?? null);
-      if (sessionData?.user?.id) fetchProfile(sessionData.user.id);
+      if (sessionData?.user?.id) fetchProfile(sessionData.user.id, sessionData.user);
       setLoading(false);
     });
 
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(sessionData);
       setUser(sessionData?.user ?? null);
       if (sessionData?.user?.id) {
-        fetchProfile(sessionData.user.id);
+        fetchProfile(sessionData.user.id, sessionData.user);
       } else {
         setProfile(null);
       }
@@ -82,7 +82,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(sessionData.data.session);
     setUser(sessionData.data.session?.user ?? null);
     if (sessionData.data.session?.user?.id) {
-      await fetchProfile(sessionData.data.session.user.id);
+      await fetchProfile(
+        sessionData.data.session.user.id,
+        sessionData.data.session.user,
+      );
     }
     setLoading(false);
   };

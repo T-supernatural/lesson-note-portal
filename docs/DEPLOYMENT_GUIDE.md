@@ -72,6 +72,28 @@ CREATE POLICY "Authenticated users can upload" ON storage.objects
    - Existing SUPABASE_URL and SUPABASE_ANON_KEY work
    - Bucket access is automatic
 
+## Step 3: Enable Bulk Teacher Invitations
+
+The Admin > Teachers page can send up to 100 invitations through the `bulk-invite` Supabase Edge Function. The function keeps the service-role key on the server and sends invitees directly to `/reset-password`.
+
+From the project root, with the Supabase CLI linked to the production project:
+
+```bash
+supabase functions deploy bulk-invite
+supabase secrets set APP_URL=https://your-live-site.example.com
+```
+
+The function automatically has access to Supabase's server variables. Do not add `SUPABASE_SERVICE_ROLE_KEY` to `.env`, Netlify, or frontend code.
+
+Paste one email per line in Admin > Teachers, or use CSV-style rows:
+
+```text
+teacher@example.com
+teacher2@example.com, Jane Smith, Mathematics
+```
+
+Invitees use the link in the email to set a password directly. The first sign-in creates their teacher profile with the Supabase email and any supplied name or subject metadata.
+
 ### Test After Deployment
 
 1. **Create a test lesson note**
@@ -91,7 +113,7 @@ CREATE POLICY "Authenticated users can upload" ON storage.objects
    - Check admin review page
    - Verify formatting visible
 
-## Step 3: Notify Teachers
+## Step 4: Notify Teachers
 
 ### Communication Template
 
