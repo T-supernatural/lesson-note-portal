@@ -12,6 +12,18 @@ import toast from "react-hot-toast";
 import NavigationShell from "../components/NavigationShell";
 import LoadingState from "../components/LoadingState";
 
+const formatDateWithWeekday = (value: string | null | undefined) => {
+  if (!value) return "Unspecified";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unspecified";
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+};
+
 const NoteViewPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -110,21 +122,13 @@ const NoteViewPage = () => {
                     {note.class_level}
                   </p>
                 </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Lesson day
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {note.lesson_day || "Unspecified"}
-                  </p>
-                </div>
                 {note.lesson_date ? (
-                  <div className="rounded-3xl bg-slate-50 p-4">
+                  <div className="rounded-3xl bg-slate-50 p-4 sm:col-span-2">
                     <p className="text-sm font-semibold text-slate-900">
                       Lesson date
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {note.lesson_date}
+                      {formatDateWithWeekday(note.lesson_date)}
                     </p>
                   </div>
                 ) : null}

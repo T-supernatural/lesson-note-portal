@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import {
   createSubmissionDeadline,
+  deleteSubmissionDeadline,
   fetchSubmissionDeadlines,
   updateSubmissionDeadline,
 } from "../services/deadlines";
@@ -21,19 +22,10 @@ import InlineError from "../components/InlineError";
 
 const terms = ["Term 1", "Term 2", "Term 3"];
 const weeks = Array.from({ length: 11 }, (_, index) => String(index + 1));
-const days = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
 type DeadlineForm = {
   academic_session_id: string;
   term: string;
   week: string;
-  lesson_day: string;
   due_at: string;
 };
 
@@ -51,7 +43,6 @@ const AdminDeadlinesPage = () => {
       academic_session_id: "",
       term: "",
       week: "",
-      lesson_day: "",
       due_at: "",
     },
   });
@@ -87,7 +78,7 @@ const AdminDeadlinesPage = () => {
     try {
       const created = await createSubmissionDeadline({
         ...values,
-        lesson_day: values.lesson_day || null,
+        lesson_day: null,
         due_at: new Date(values.due_at).toISOString(),
         is_active: true,
       });
@@ -124,6 +115,20 @@ const AdminDeadlinesPage = () => {
     }
   };
 
+  const removeDeadline = async (deadline: SubmissionDeadline) => {
+    if (!window.confirm(`Delete the deadline for ${deadline.term}, Week ${deadline.week}?`)) {
+      return;
+    }
+
+    try {
+      await deleteSubmissionDeadline(deadline.id);
+      setDeadlines((current) => current.filter((item) => item.id !== deadline.id));
+      toast.success("Deadline deleted");
+    } catch (error: any) {
+      toast.error(error?.message || "Unable to delete deadline");
+    }
+  };
+
   return (
     <NavigationShell role="admin">
       <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -156,7 +161,7 @@ const AdminDeadlinesPage = () => {
               title="Add or replace a deadline"
               description="A deadline applies to every active teacher in the selected schedule."
             />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Session
                 <Select
@@ -190,17 +195,6 @@ const AdminDeadlinesPage = () => {
                   {weeks.map((week) => (
                     <option key={week} value={week}>
                       Week {week}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Day
-                <Select {...register("lesson_day")}>
-                  <option value="">Any day</option>
-                  {days.map((day) => (
-                    <option key={day} value={day}>
-                      {day}
                     </option>
                   ))}
                 </Select>
@@ -246,7 +240,14 @@ const AdminDeadlinesPage = () => {
                           : " • Any day"}
                       </p>
                       <p className="mt-2 text-lg font-semibold text-slate-900">
-                        Due {new Date(deadline.due_at).toLocaleString()}
+                        Due {new Intl.DateTimeFormat(undefined, {
+                          weekday: "long",
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        }).format(new Date(deadline.due_at))}
                       </p>
                       <p
                         className={`mt-1 text-sm ${deadline.is_active ? "text-emerald-700" : "text-slate-500"}`}
@@ -256,18 +257,27 @@ const AdminDeadlinesPage = () => {
                           : "Inactive deadline"}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => void toggleDeadline(deadline)}
-                      disabled={updatingId === deadline.id}
-                    >
-                      {updatingId === deadline.id
-                        ? "Updating…"
-                        : deadline.is_active
-                          ? "Deactivate"
-                          : "Activate"}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void toggleDeadline(deadline)}
+                        disabled={updatingId === deadline.id}
+                      >
+                        {updatingId === deadline.id
+                          ? "Updating…"
+                          : deadline.is_active
+                            ? "Deactivate"
+                            : "Activate"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={() => void removeDeadline(deadline)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

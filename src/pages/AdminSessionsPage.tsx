@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import {
   createAcademicSession,
+  deleteAcademicSession,
   fetchAcademicSessions,
   setAcademicSessionArchived,
   setActiveAcademicSession,
@@ -27,12 +28,14 @@ const SessionRow = ({
   onSave,
   onActivate,
   onArchive,
+  onDelete,
 }: {
   session: AcademicSession;
   saving: boolean;
   onSave: (values: SessionForm) => Promise<void>;
   onActivate: () => Promise<void>;
   onArchive: () => Promise<void>;
+  onDelete: () => Promise<void>;
 }) => {
   const { register, handleSubmit, reset } = useForm<SessionForm>({
     defaultValues: {
@@ -108,6 +111,14 @@ const SessionRow = ({
                   : "Archive"}
             </Button>
           ) : null}
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => void onDelete()}
+            disabled={saving || session.is_active}
+          >
+            {saving ? "Deleting…" : "Delete"}
+          </Button>
           <Button type="submit" disabled={saving}>
             {saving ? "Saving…" : "Save changes"}
           </Button>
@@ -219,6 +230,23 @@ const AdminSessionsPage = () => {
     }
   };
 
+  const removeSession = async (session: AcademicSession) => {
+    if (!window.confirm(`Delete ${session.name}? This cannot be undone.`)) {
+      return;
+    }
+
+    setSavingId(session.id);
+    try {
+      await deleteAcademicSession(session.id);
+      setSessions((current) => current.filter((item) => item.id !== session.id));
+      toast.success(`${session.name} deleted`);
+    } catch (error: any) {
+      toast.error(error?.message || "Unable to delete session");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   return (
     <NavigationShell role="admin">
       <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -293,6 +321,7 @@ const AdminSessionsPage = () => {
                   onSave={(values) => saveSession(session.id, values)}
                   onActivate={() => activate(session.id)}
                   onArchive={() => archive(session)}
+                  onDelete={() => removeSession(session)}
                 />
               ))}
             </div>

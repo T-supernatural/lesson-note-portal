@@ -4,6 +4,8 @@ import { Plus, FileText } from "lucide-react";
 import { useAuth } from "../context/auth-context";
 import { fetchTeacherNotes } from "../services/notes";
 import {
+  clearNotifications,
+  deleteNotification,
   fetchNotifications,
   markNotificationRead,
 } from "../services/notifications";
@@ -20,6 +22,26 @@ import NotificationBell from "../components/NotificationBell";
 import NavigationShell from "../components/NavigationShell";
 import LoadingState from "../components/LoadingState";
 import InlineError from "../components/InlineError";
+
+const formatDeadlineCountdown = (value: string) => {
+  const diffMs = new Date(value).getTime() - Date.now();
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return "Due today";
+  if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
+  return `${days} day${days === 1 ? "" : "s"} left`;
+};
+
+const formatDateWithWeekday = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No date";
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+};
 
 const TeacherDashboardPage = () => {
   const { profile, signOut } = useAuth();
@@ -63,6 +85,17 @@ const TeacherDashboardPage = () => {
     );
   };
 
+  const handleNotificationDelete = async (notificationId: string) => {
+    await deleteNotification(notificationId);
+    setNotifications((current) => current.filter((item) => item.id !== notificationId));
+  };
+
+  const handleNotificationsClear = async () => {
+    if (!profile) return;
+    await clearNotifications(profile.id);
+    setNotifications([]);
+  };
+
   const stats = useMemo(() => {
     const count = (status: string) =>
       notes.filter((note) => note.status === status).length;
@@ -98,6 +131,8 @@ const TeacherDashboardPage = () => {
               notifications={notifications}
               onRead={handleNotificationRead}
               onOpenNote={(noteId) => navigate(`/notes/${noteId}`)}
+              onDelete={handleNotificationDelete}
+              onClear={handleNotificationsClear}
             />
             <Button
               variant="secondary"
@@ -180,8 +215,10 @@ const TeacherDashboardPage = () => {
                       {deadline.term} • Week {deadline.week}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {deadline.lesson_day || "Any day"} • Due{" "}
-                      {new Date(deadline.due_at).toLocaleString()}
+                      {deadline.lesson_day || "Any day"} • {formatDeadlineCountdown(deadline.due_at)}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Due {formatDateWithWeekday(deadline.due_at)}
                     </p>
                   </div>
                 ))}

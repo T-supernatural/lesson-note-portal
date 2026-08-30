@@ -42,3 +42,11 @@ export const setAcademicSessionArchived = async (sessionId: string, archived: bo
   if (error) throw error;
   return data as AcademicSession;
 };
+
+export const deleteAcademicSession = async (sessionId: string) => {
+  const { error } = await supabase
+    .from('academic_sessions')
+    .delete()
+    .eq('id', sessionId);
+  if (error) throw error;
+};

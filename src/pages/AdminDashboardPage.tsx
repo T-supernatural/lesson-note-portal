@@ -40,7 +40,12 @@ type AnalyticsNote = Pick<
   | "updated_at"
 >;
 
-const chartColors = ["#1e3a8a", "#2563eb", "#60a5fa", "#93c5fd"];
+const chartColors: Record<string, string> = {
+  submitted: "#2563eb",
+  draft: "#94a3b8",
+  rejected: "#ef4444",
+  approved: "#16a34a",
+};
 
 const countBy = (items: string[]) =>
   items.reduce<Record<string, number>>((counts, item) => {
@@ -110,15 +115,18 @@ const AdminDashboardPage = () => {
     () =>
       [
         {
+          key: "submitted",
           name: "Pending review",
           value: notes.filter((note) => note.status === "submitted").length,
         },
         {
+          key: "approved",
           name: "Approved",
           value: notes.filter((note) => note.status === "approved").length,
         },
-        { name: "Rejected", value: rejectedCount },
+        { key: "rejected", name: "Rejected", value: rejectedCount },
         {
+          key: "draft",
           name: "Draft",
           value: notes.filter((note) => note.status === "draft").length,
         },
@@ -253,10 +261,10 @@ const AdminDashboardPage = () => {
                           outerRadius={92}
                           paddingAngle={3}
                         >
-                          {statusData.map((entry, index) => (
+                          {statusData.map((entry) => (
                             <Cell
                               key={entry.name}
-                              fill={chartColors[index % chartColors.length]}
+                              fill={chartColors[entry.key] || chartColors.submitted}
                             />
                           ))}
                         </Pie>

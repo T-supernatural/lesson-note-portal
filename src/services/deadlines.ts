@@ -38,3 +38,11 @@ export const updateSubmissionDeadline = async (deadlineId: string, updates: Pick
   if (error) throw error;
   return data as SubmissionDeadline;
 };
+
+export const deleteSubmissionDeadline = async (deadlineId: string) => {
+  const { error } = await supabase
+    .from('submission_deadlines')
+    .delete()
+    .eq('id', deadlineId);
+  if (error) throw error;
+};

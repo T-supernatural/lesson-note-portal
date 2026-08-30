@@ -39,7 +39,12 @@ type AnalyticsNote = Pick<
   | "academic_session_id"
   | "updated_at"
 >;
-const chartColors = ["#1e3a8a", "#2563eb", "#60a5fa", "#93c5fd"];
+const chartColors: Record<string, string> = {
+  submitted: "#2563eb",
+  draft: "#94a3b8",
+  rejected: "#ef4444",
+  approved: "#16a34a",
+};
 
 const countBy = (items: string[]) =>
   items.reduce<Record<string, number>>((counts, item) => {
@@ -217,10 +222,10 @@ const AdminAnalyticsPage = () => {
                           outerRadius={112}
                           paddingAngle={3}
                         >
-                          {statusData.map((entry, index) => (
+                          {statusData.map((entry) => (
                             <Cell
                               key={entry.name}
-                              fill={chartColors[index % chartColors.length]}
+                              fill={chartColors[entry.name.toLowerCase()] || chartColors.submitted}
                             />
                           ))}
                         </Pie>

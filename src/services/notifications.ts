@@ -30,3 +30,19 @@ export const markNotificationRead = async (notificationId: string) => {
     .eq('id', notificationId);
   if (error) throw error;
 };
+
+export const deleteNotification = async (notificationId: string) => {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId);
+  if (error) throw error;
+};
+
+export const clearNotifications = async (userId: string) => {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('user_id', userId);
+  if (error) throw error;
+};
